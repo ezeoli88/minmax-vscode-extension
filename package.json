@@ -1,0 +1,133 @@
+{
+  "name": "minmax-vscode",
+  "displayName": "MiniMax AI Assistant",
+  "description": "AI coding assistant powered by MiniMax M2.5",
+  "version": "0.1.0",
+  "publisher": "minimax",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Chat"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "minimax-chat",
+          "title": "MiniMax",
+          "icon": "resources/minimax-code-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "minimax-chat": [
+        {
+          "type": "webview",
+          "id": "minimaxChat",
+          "name": "Chat"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "minimax.openChat",
+        "title": "MiniMax: Open Chat"
+      },
+      {
+        "command": "minimax.setApiKey",
+        "title": "MiniMax: Set API Key"
+      },
+      {
+        "command": "minimax.cancelStream",
+        "title": "MiniMax: Cancel Stream"
+      },
+      {
+        "command": "minimax.toggleMode",
+        "title": "MiniMax: Toggle Plan/Builder Mode"
+      },
+      {
+        "command": "minimax.clearChat",
+        "title": "MiniMax: Clear Chat"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "minimax.openChat",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m"
+      },
+      {
+        "command": "minimax.cancelStream",
+        "key": "escape",
+        "when": "minimax.isStreaming"
+      }
+    ],
+    "configuration": {
+      "title": "MiniMax",
+      "properties": {
+        "minimax.model": {
+          "type": "string",
+          "default": "MiniMax-M2.5",
+          "enum": [
+            "MiniMax-M2.5",
+            "MiniMax-M2.5-highspeed",
+            "MiniMax-M2.1",
+            "MiniMax-M2.1-highspeed"
+          ],
+          "description": "MiniMax model to use"
+        },
+        "minimax.theme": {
+          "type": "string",
+          "default": "tokyo-night",
+          "enum": [
+            "tokyo-night",
+            "rose-pine",
+            "gruvbox"
+          ],
+          "description": "Chat panel theme"
+        },
+        "minimax.defaultMode": {
+          "type": "string",
+          "default": "BUILDER",
+          "enum": [
+            "BUILDER",
+            "PLAN"
+          ],
+          "description": "Default agent mode"
+        },
+        "minimax.mcpServers": {
+          "type": "object",
+          "default": {},
+          "description": "MCP server configurations: { serverName: { command, args?, env? } }"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "package": "npx @vscode/vsce package"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.3.0",
+    "@types/diff": "^7.0.2",
+    "diff": "^8.0.3",
+    "fast-glob": "^3.3.2",
+    "openai": "^4.77.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.7.0"
+  }
+}

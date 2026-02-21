@@ -1,0 +1,8 @@
+src/**
+node_modules/**
+tsconfig.json
+tsconfig.webview.json
+esbuild.mjs
+.gitignore
+**/*.map
+VSCODE_EXTENSION_PLAN.md
