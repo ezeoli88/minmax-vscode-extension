@@ -4,6 +4,12 @@
   "description": "AI coding assistant powered by MiniMax M2.5",
   "version": "0.1.0",
   "publisher": "minimax",
+  "license": "MIT",
+  "icon": "resources/minimax-code-icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ezeoli88/minmax-vscode-extension"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },

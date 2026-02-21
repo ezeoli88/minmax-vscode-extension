@@ -1,4 +1,4 @@
-# <img src="resources/minimax-code-icon.svg" width="28" align="top"> MiniMax AI Assistant for VS Code
+# <img src="resources/minimax-code-icon.png" width="28" align="top"> MiniMax AI Assistant for VS Code
 
 An AI-powered coding assistant that lives in your sidebar. Chat with MiniMax models to write, edit, search, and understand your codebase — without leaving your editor.
 
