@@ -7,7 +7,7 @@ An AI-powered coding assistant that lives in your sidebar. Chat with MiniMax mod
 
 ---
 
-<img width="1919" height="1023" alt="Captura de pantalla 2026-02-21 184718" src="https://github.com/user-attachments/assets/bb75fe46-e6f7-4023-8aca-01b9629f7704" />
+<img width="100%" alt="MiniMax AI Assistant" src="https://github.com/user-attachments/assets/bb75fe46-e6f7-4023-8aca-01b9629f7704" style="object-fit: contain;" />
 
 
 ## Features
