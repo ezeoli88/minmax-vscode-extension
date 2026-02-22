@@ -311,6 +311,7 @@ Be concise. Show relevant code, skip obvious explanations.`;
         isNewFile,
         diffLines,
         language: langMap[ext] || ext || "text",
+        oldContent: old,
       };
     } catch {
       return undefined;

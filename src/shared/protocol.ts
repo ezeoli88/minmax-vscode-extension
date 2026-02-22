@@ -47,6 +47,7 @@ export interface FileChangeData {
   isNewFile: boolean;
   diffLines: DiffLine[];
   language: string;
+  oldContent: string;
 }
 
 // --- Extension → Webview ---

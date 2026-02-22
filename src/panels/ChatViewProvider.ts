@@ -1,12 +1,14 @@
 import * as vscode from "vscode";
+import { basename } from "path";
 import type OpenAI from "openai";
 import { createClient, fetchCodingPlanRemains } from "../core/api";
 import { AgentRunner } from "../agent/AgentRunner";
 import { loadConfig, getApiKey, setApiKey, updateConfig } from "../config/settings";
 import { themes } from "../config/themes";
 import { SessionManager } from "../core/sessions";
-import type { AgentMode, ExtensionToWebview, WebviewToExtension } from "../shared/protocol";
+import type { AgentMode, ExtensionToWebview, FileChangeData, WebviewToExtension } from "../shared/protocol";
 import { setCwd } from "../tools/cwd";
+import { OldContentProvider } from "./OldContentProvider";
 
 export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "minimaxChat";
@@ -25,6 +27,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private currentSessionId: string;
   private webviewMessages: any[] = [];
   private disposables: vscode.Disposable[] = [];
+  private oldContentProvider = new OldContentProvider();
 
   constructor(extensionUri: vscode.Uri, secrets: vscode.SecretStorage, globalState: vscode.Memento) {
     this.extensionUri = extensionUri;
@@ -52,6 +55,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     };
 
     webviewView.webview.html = this.getWebviewHtml(webviewView.webview);
+
+    this.disposables.push(
+      vscode.workspace.registerTextDocumentContentProvider(
+        OldContentProvider.scheme,
+        this.oldContentProvider
+      )
+    );
 
     webviewView.webview.onDidReceiveMessage(
       (msg: WebviewToExtension) => this.handleWebviewMessage(msg),
@@ -122,8 +132,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       vscode.commands.executeCommand("setContext", "minimax.isStreaming", true);
     });
 
-    this.agent.on("tool:end", (toolCallId: string, result: string, fileChange?: any) => {
-      this.postMessage({ type: "toolEnd", toolCallId, result, fileChange });
+    this.agent.on("tool:end", (toolCallId: string, result: string, fileChange?: FileChangeData) => {
+      if (fileChange) {
+        this.openDiffEditor(fileChange);
+        const { oldContent: _, ...webviewFileChange } = fileChange;
+        this.postMessage({ type: "toolEnd", toolCallId, result, fileChange: webviewFileChange as any });
+      } else {
+        this.postMessage({ type: "toolEnd", toolCallId, result });
+      }
     });
 
     this.agent.on("tokens:update", (total: number) => {
@@ -140,6 +156,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.refreshQuota();
       this.autoSaveSession();
     });
+  }
+
+  private openDiffEditor(fileChange: FileChangeData): void {
+    const key = `${Date.now()}-${fileChange.filePath}`;
+    const oldUri = this.oldContentProvider.set(key, fileChange.oldContent);
+    const newUri = vscode.Uri.file(fileChange.filePath);
+    const fileName = basename(fileChange.filePath);
+    const title = fileChange.isNewFile
+      ? `${fileName} (new file)`
+      : `${fileName} (before ↔ after)`;
+
+    vscode.commands.executeCommand("vscode.diff", oldUri, newUri, title);
+
+    setTimeout(() => this.oldContentProvider.delete(key), 5_000);
   }
 
   private async handleWebviewMessage(msg: WebviewToExtension): Promise<void> {
