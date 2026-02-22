@@ -6,3 +6,4 @@ esbuild.mjs
 .gitignore
 **/*.map
 VSCODE_EXTENSION_PLAN.md
+*.gif

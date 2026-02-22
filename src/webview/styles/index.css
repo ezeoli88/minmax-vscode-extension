@@ -520,8 +520,16 @@ body {
   max-height: 200px;
 }
 
-.input-textarea:focus {
-  border-color: var(--accent);
+.input-textarea.mode-plan {
+  border-color: var(--plan-badge);
+  color: var(--text);
+  background: var(--bg);
+}
+
+.input-textarea.mode-builder {
+  border-color: var(--builder-badge);
+  color: var(--text);
+  background: var(--bg);
 }
 
 .input-textarea::placeholder {

@@ -97,7 +97,7 @@ export function InputBox({
       <div className="input-row">
         <textarea
           ref={textareaRef}
-          className="input-textarea"
+          className={`input-textarea mode-${mode.toLowerCase()}`}
           value={text}
           onChange={handleChange}
           onKeyDown={handleKeyDown}

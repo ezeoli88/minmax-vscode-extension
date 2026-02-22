@@ -21,6 +21,10 @@ An AI-powered coding assistant that lives in your sidebar. Chat with MiniMax mod
 
 Toggle between modes with `Tab` in the input box or click the mode badge.
 
+| Plan Mode | Builder Mode |
+|:---------:|:------------:|
+| ![Plan Mode](https://raw.githubusercontent.com/ezeoli88/minmax-vscode-extension/main/plan-mode.gif) | ![Builder Mode](https://raw.githubusercontent.com/ezeoli88/minmax-vscode-extension/main/builder-mode.gif) |
+
 ### Built-in Tools
 
 The agent has access to 8 tools that operate directly on your workspace:
