@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { ChatViewProvider } from "./panels/ChatViewProvider";
 import { loadConfig, setApiKey } from "./config/settings";
 import { initMCPServers, shutdownMCPServers } from "./core/mcp";
+import { processManager } from "./core/process-manager";
 
 let provider: ChatViewProvider | undefined;
 
@@ -80,6 +81,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
+  processManager.stopAll();
   shutdownMCPServers();
   provider?.dispose();
 }

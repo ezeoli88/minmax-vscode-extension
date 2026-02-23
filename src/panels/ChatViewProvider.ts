@@ -8,6 +8,8 @@ import { themes } from "../config/themes";
 import { SessionManager } from "../core/sessions";
 import type { AgentMode, ExtensionToWebview, FileChangeData, WebviewToExtension } from "../shared/protocol";
 import { setCwd } from "../tools/cwd";
+import { setOpenBrowserHandler } from "../tools/vscode-bridge";
+import { processManager } from "../core/process-manager";
 import { OldContentProvider } from "./OldContentProvider";
 
 export class ChatViewProvider implements vscode.WebviewViewProvider {
@@ -96,6 +98,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.client = createClient(apiKey);
     const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
     setCwd(cwd);
+    setOpenBrowserHandler(async (url: string) => {
+      await vscode.commands.executeCommand("simpleBrowser.api.open", vscode.Uri.parse(url));
+    });
 
     this.agent = new AgentRunner({
       client: this.client,
@@ -271,6 +276,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private async handleNewSession(): Promise<void> {
     // Save current session if it has messages
     await this.autoSaveSession();
+    processManager.stopAll();
     // Start fresh
     this.currentSessionId = this.sessionManager.generateId();
     this.webviewMessages = [];
@@ -370,6 +376,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   dispose(): void {
+    processManager.stopAll();
     this.stopQuotaPolling();
     this.disposables.forEach((d) => d.dispose());
   }
