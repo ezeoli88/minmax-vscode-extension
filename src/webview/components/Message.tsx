@@ -1,5 +1,6 @@
 import type { ChatMessage } from "../App";
 import { DiffView } from "./DiffView";
+import { Markdown } from "./Markdown";
 
 interface MessageProps {
   message: ChatMessage;
@@ -39,12 +40,12 @@ export function Message({ message }: MessageProps) {
       {message.reasoning && (
         <details className="reasoning-block">
           <summary className="reasoning-summary">Thinking...</summary>
-          <div className="reasoning-content">{message.reasoning}</div>
+          <Markdown content={message.reasoning} className="reasoning-content" />
         </details>
       )}
       {message.content && (
         <div className="message-content">
-          {message.content}
+          <Markdown content={message.content} />
           {message.isStreaming && <span className="streaming-cursor">|</span>}
         </div>
       )}
