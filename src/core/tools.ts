@@ -6,6 +6,10 @@ import * as editFileTool from "../tools/edit-file";
 import * as globTool from "../tools/glob";
 import * as grepTool from "../tools/grep";
 import * as listDirTool from "../tools/list-dir";
+import * as bashBgTool from "../tools/bash-bg";
+import * as openBrowserTool from "../tools/open-browser";
+import * as stopServerTool from "../tools/stop-server";
+import * as listServersTool from "../tools/list-servers";
 import { callMCPTool, getMCPToolDefinitions } from "./mcp";
 
 interface ToolModule {
@@ -21,6 +25,10 @@ const builtinTools: ToolModule[] = [
   globTool,
   grepTool,
   listDirTool,
+  bashBgTool,
+  openBrowserTool,
+  stopServerTool,
+  listServersTool,
 ];
 
 const TOOL_REGISTRY = new Map<string, (args: any) => Promise<any>>();

@@ -76,9 +76,16 @@ TOOL USAGE:
 - Read before editing: always use read_file before edit_file to see current content
 - Use edit_file for modifications to existing files, write_file only for new files
 - Use glob/grep to find files before reading them
-- Use bash for git, npm, and other CLI operations
+- Use bash for git, npm install, and other quick CLI operations
 - Execute one logical step at a time, verify results, then proceed
-- NEVER start long-running processes via bash (e.g. node server.js, npm start, npm run dev, python -m http.server, etc.). These block the assistant. Instead, tell the user to start the server manually in their terminal.
+
+BACKGROUND SERVERS:
+- NEVER use bash for long-running processes (dev servers, watchers, etc.) — it blocks the assistant
+- Use bash_bg to start dev servers: bash_bg({command: "npm run dev", port: 3000})
+- For frontend: bash_bg to start server, then open_browser to preview in VSCode
+- For backend/API: bash_bg to start server, then bash("curl http://localhost:PORT/...") to test endpoints
+- Use list_servers to check running processes
+- Always use stop_server when done testing or before starting a new server on the same port
 
 Be concise. Show relevant code, skip obvious explanations.`;
     }
