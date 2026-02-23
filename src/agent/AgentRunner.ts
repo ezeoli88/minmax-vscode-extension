@@ -81,9 +81,13 @@ TOOL USAGE:
 
 BACKGROUND SERVERS:
 - NEVER use bash for long-running processes (dev servers, watchers, etc.) — it blocks the assistant
-- Use bash_bg to start dev servers: bash_bg({command: "npm run dev", port: 3000})
-- For frontend: bash_bg to start server, then open_browser to preview in VSCode
-- For backend/API: bash_bg to start server, then bash("curl http://localhost:PORT/...") to test endpoints
+- NEVER start a server automatically. Always ASK the user first:
+  - For frontend projects: ask "Do you want me to start the dev server and open the browser so you can see the result?"
+  - For backend/API projects: ask "Do you want me to start the server and test the endpoints with curl?"
+- Only after the user confirms, proceed with:
+  - bash_bg to start the server: bash_bg({command: "npm run dev", port: 3000})
+  - For frontend: open_browser to preview in VSCode
+  - For backend: bash("curl http://localhost:PORT/...") to test endpoints
 - Use list_servers to check running processes
 - Always use stop_server when done testing or before starting a new server on the same port
 
