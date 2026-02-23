@@ -1,5 +1,7 @@
 import { existsSync } from "fs";
 import { readFile } from "fs/promises";
+import { isAbsolute, resolve } from "path";
+import { getCwd } from "./cwd";
 
 export const definition = {
   type: "function" as const,
@@ -33,11 +35,13 @@ export async function execute(args: {
   start_line?: number;
   end_line?: number;
 }): Promise<string> {
-  if (!existsSync(args.path)) {
-    return `Error: File not found: ${args.path}`;
+  const fullPath = isAbsolute(args.path) ? args.path : resolve(getCwd(), args.path);
+
+  if (!existsSync(fullPath)) {
+    return `Error: File not found: ${fullPath}`;
   }
 
-  const text = await readFile(args.path, "utf-8");
+  const text = await readFile(fullPath, "utf-8");
 
   if (args.start_line || args.end_line) {
     const lines = text.split("\n");

@@ -1,5 +1,7 @@
 import { existsSync } from "fs";
 import { readFile, writeFile } from "fs/promises";
+import { isAbsolute, resolve } from "path";
+import { getCwd } from "./cwd";
 
 export const definition = {
   type: "function" as const,
@@ -33,21 +35,23 @@ export async function execute(args: {
   old_str: string;
   new_str: string;
 }): Promise<string> {
-  if (!existsSync(args.path)) {
-    return `Error: File not found: ${args.path}`;
+  const fullPath = isAbsolute(args.path) ? args.path : resolve(getCwd(), args.path);
+
+  if (!existsSync(fullPath)) {
+    return `Error: File not found: ${fullPath}`;
   }
 
-  const content = await readFile(args.path, "utf-8");
+  const content = await readFile(fullPath, "utf-8");
 
   const occurrences = content.split(args.old_str).length - 1;
   if (occurrences === 0) {
-    return `Error: old_str not found in ${args.path}`;
+    return `Error: old_str not found in ${fullPath}`;
   }
   if (occurrences > 1) {
-    return `Error: old_str found ${occurrences} times in ${args.path}. It must be unique. Add more context to make it unique.`;
+    return `Error: old_str found ${occurrences} times in ${fullPath}. It must be unique. Add more context to make it unique.`;
   }
 
   const newContent = content.replace(args.old_str, args.new_str);
-  await writeFile(args.path, newContent, "utf-8");
-  return `File edited successfully: ${args.path}`;
+  await writeFile(fullPath, newContent, "utf-8");
+  return `File edited successfully: ${fullPath}`;
 }

@@ -2,7 +2,7 @@
   "name": "minmax-vscode",
   "displayName": "MiniMax AI Assistant",
   "description": "AI coding assistant powered by MiniMax M2.5",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "publisher": "ezeoli88",
   "license": "MIT",
   "icon": "resources/minimax-code-icon.png",

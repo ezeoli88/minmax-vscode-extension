@@ -1,6 +1,7 @@
 import { mkdirSync } from "fs";
 import { writeFile } from "fs/promises";
-import { dirname } from "path";
+import { dirname, isAbsolute, resolve } from "path";
+import { getCwd } from "./cwd";
 
 export const definition = {
   type: "function" as const,
@@ -26,10 +27,11 @@ export const definition = {
 
 export async function execute(args: { path: string; content: string }): Promise<string> {
   try {
-    const dir = dirname(args.path);
+    const fullPath = isAbsolute(args.path) ? args.path : resolve(getCwd(), args.path);
+    const dir = dirname(fullPath);
     mkdirSync(dir, { recursive: true });
-    await writeFile(args.path, args.content, "utf-8");
-    return `File written successfully: ${args.path}`;
+    await writeFile(fullPath, args.content, "utf-8");
+    return `File written successfully: ${fullPath}`;
   } catch (err: any) {
     return `Error writing file: ${err.message}`;
   }

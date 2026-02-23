@@ -3,10 +3,11 @@ import type OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { streamChat, type AccumulatedToolCall } from "../core/api";
 import { getToolDefinitions, getReadOnlyToolDefinitions, executeTool } from "../core/tools";
+import { killActiveProcess } from "../tools/bash";
 import { parseModelOutput, coerceArg, type ParsedToolCall } from "../core/parser";
 import { existsSync, readFileSync } from "fs";
 import { readFile } from "fs/promises";
-import { join, extname } from "path";
+import { join, extname, isAbsolute, resolve } from "path";
 import { structuredPatch } from "diff";
 import type { AgentMode, SerializedToolCall, DiffLine, FileChangeData } from "../shared/protocol";
 
@@ -36,6 +37,7 @@ export class AgentRunner extends EventEmitter {
   }
 
   cancel() {
+    killActiveProcess();
     this.abortController?.abort();
   }
 
@@ -76,6 +78,7 @@ TOOL USAGE:
 - Use glob/grep to find files before reading them
 - Use bash for git, npm, and other CLI operations
 - Execute one logical step at a time, verify results, then proceed
+- NEVER start long-running processes via bash (e.g. node server.js, npm start, npm run dev, python -m http.server, etc.). These block the assistant. Instead, tell the user to start the server manually in their terminal.
 
 Be concise. Show relevant code, skip obvious explanations.`;
     }
@@ -237,7 +240,7 @@ Be concise. Show relevant code, skip obvious explanations.`;
             let filePath: string | undefined;
 
             if (isFileModifyTool && args.path) {
-              filePath = args.path;
+              filePath = isAbsolute(args.path) ? args.path : resolve(this.cwd, args.path);
               try {
                 oldContent = await readFile(filePath!, "utf-8");
               } catch {
@@ -247,7 +250,7 @@ Be concise. Show relevant code, skip obvious explanations.`;
 
             let toolResult: string;
             try {
-              toolResult = await executeTool(toolName, args);
+              toolResult = await executeTool(toolName, args, abort.signal);
             } catch (err: any) {
               toolResult = `Error: ${err.message}`;
             }

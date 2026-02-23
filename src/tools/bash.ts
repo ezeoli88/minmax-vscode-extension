@@ -1,4 +1,4 @@
-import { spawn } from "child_process";
+import { spawn, type ChildProcess } from "child_process";
 import { getCwd } from "./cwd";
 
 export const definition = {
@@ -6,7 +6,7 @@ export const definition = {
   function: {
     name: "bash",
     description:
-      "Execute a shell command. Use for: running scripts, git operations, installing packages, or any terminal task. Timeout: 30s. Output truncated at 10KB. Prefer other tools over bash when possible (e.g., use read_file instead of cat, glob instead of find).",
+      "Execute a shell command. Use for: running scripts, git operations, installing packages, or any terminal task. Timeout: 30s. Output truncated at 10KB. Prefer other tools over bash when possible (e.g., use read_file instead of cat, glob instead of find). IMPORTANT: Do NOT use this to start long-running servers (node server.js, npm start, etc.) — use it only for commands that finish quickly.",
     parameters: {
       type: "object",
       properties: {
@@ -20,9 +20,19 @@ export const definition = {
   },
 };
 
-export async function execute(args: {
-  command: string;
-}): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+let activeProcess: ChildProcess | null = null;
+
+export function killActiveProcess(): void {
+  if (activeProcess) {
+    activeProcess.kill("SIGTERM");
+    activeProcess = null;
+  }
+}
+
+export async function execute(
+  args: { command: string },
+  signal?: AbortSignal
+): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve) => {
     const isWindows = process.platform === "win32";
     const shell = isWindows ? "cmd" : "bash";
@@ -34,14 +44,26 @@ export async function execute(args: {
       stdio: ["ignore", "pipe", "pipe"],
     });
 
+    activeProcess = proc;
+
     let stdout = "";
     let stderr = "";
     let killed = false;
+    let killReason = "";
 
     const timeout = setTimeout(() => {
       killed = true;
+      killReason = "30s timeout";
       proc.kill("SIGTERM");
     }, 30_000);
+
+    // Handle abort signal (user cancel)
+    const onAbort = () => {
+      killed = true;
+      killReason = "cancelled by user";
+      proc.kill("SIGTERM");
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
 
     proc.stdout.on("data", (data: Buffer) => {
       stdout += data.toString();
@@ -53,9 +75,11 @@ export async function execute(args: {
 
     proc.on("close", (code) => {
       clearTimeout(timeout);
+      signal?.removeEventListener("abort", onAbort);
+      activeProcess = null;
 
       if (killed) {
-        stderr += "\n(process killed: 30s timeout)";
+        stderr += `\n(process killed: ${killReason})`;
       }
 
       const maxLen = 10000;
@@ -68,6 +92,8 @@ export async function execute(args: {
 
     proc.on("error", (err) => {
       clearTimeout(timeout);
+      signal?.removeEventListener("abort", onAbort);
+      activeProcess = null;
       resolve({
         stdout: "",
         stderr: `Failed to spawn process: ${err.message}`,

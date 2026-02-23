@@ -45,12 +45,16 @@ export function getReadOnlyToolDefinitions(): OpenAI.Chat.Completions.ChatComple
 
 export async function executeTool(
   name: string,
-  args: Record<string, any>
+  args: Record<string, any>,
+  signal?: AbortSignal
 ): Promise<string> {
   // Check built-in tools first
   const builtinFn = TOOL_REGISTRY.get(name);
   if (builtinFn) {
-    const result = await builtinFn(args);
+    // Pass signal to bash tool for cancellation support
+    const result = name === "bash"
+      ? await builtinFn(args, signal)
+      : await builtinFn(args);
     if (typeof result === "string") return result;
     return JSON.stringify(result, null, 2);
   }
