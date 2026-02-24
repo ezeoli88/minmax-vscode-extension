@@ -33,6 +33,12 @@ export type WebviewToExtension =
   | { type: "clearChat" }
   | { type: "syncMessages"; messages: any[] }
   | { type: "requestFileCompletion"; query: string }
+  | { type: "openFileChange"; filePath: string }
+  | { type: "getFileChanges" }
+  | { type: "acceptFileChange"; filePath: string }
+  | { type: "rejectFileChange"; filePath: string }
+  | { type: "acceptAllChanges" }
+  | { type: "rejectAllChanges" }
   | { type: "ready" };
 
 // --- Diff types for inline file change visualization ---
@@ -48,6 +54,16 @@ export interface FileChangeData {
   diffLines: DiffLine[];
   language: string;
   oldContent: string;
+}
+
+// --- File change summary for "View Changes" panel ---
+
+export interface FileChangeSummary {
+  filePath: string;
+  isNewFile: boolean;
+  addedLines: number;
+  removedLines: number;
+  language: string;
 }
 
 // --- Extension → Webview ---
@@ -78,4 +94,5 @@ export type ExtensionToWebview =
   | { type: "sessionsList"; sessions: SessionSummaryData[] }
   | { type: "sessionLoaded"; messages: any[] }
   | { type: "apiKeyStatus"; hasKey: boolean }
-  | { type: "fileCompletions"; files: string[] };
+  | { type: "fileCompletions"; files: string[] }
+  | { type: "fileChangesList"; changes: FileChangeSummary[] };

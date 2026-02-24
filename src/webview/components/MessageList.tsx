@@ -5,9 +5,11 @@ import { Message } from "./Message";
 interface MessageListProps {
   messages: ChatMessage[];
   isLoading: boolean;
+  showViewChangesButton?: boolean;
+  onViewChanges?: () => void;
 }
 
-export function MessageList({ messages, isLoading }: MessageListProps) {
+export function MessageList({ messages, isLoading, showViewChangesButton, onViewChanges }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const userScrolledUp = useRef(false);
@@ -48,6 +50,11 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
           <span className="dot" />
           <span className="dot" />
         </div>
+      )}
+      {showViewChangesButton && (
+        <button className="view-changes-btn" onClick={onViewChanges}>
+          View Changes
+        </button>
       )}
       <div ref={bottomRef} />
     </div>

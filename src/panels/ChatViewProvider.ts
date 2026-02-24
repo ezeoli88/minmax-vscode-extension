@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { writeFile, unlink } from "fs/promises";
 import { basename } from "path";
 import type OpenAI from "openai";
 import { createClient, fetchCodingPlanRemains } from "../core/api";
@@ -6,7 +7,7 @@ import { AgentRunner } from "../agent/AgentRunner";
 import { loadConfig, getApiKey, setApiKey, updateConfig } from "../config/settings";
 import { themes } from "../config/themes";
 import { SessionManager } from "../core/sessions";
-import type { AgentMode, ExtensionToWebview, FileChangeData, WebviewToExtension } from "../shared/protocol";
+import type { AgentMode, ExtensionToWebview, FileChangeData, FileChangeSummary, WebviewToExtension } from "../shared/protocol";
 import { setCwd } from "../tools/cwd";
 import { setOpenBrowserHandler } from "../tools/vscode-bridge";
 import { processManager } from "../core/process-manager";
@@ -30,6 +31,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private webviewMessages: any[] = [];
   private disposables: vscode.Disposable[] = [];
   private oldContentProvider = new OldContentProvider();
+  private sessionFileChanges = new Map<string, FileChangeData>();
 
   constructor(extensionUri: vscode.Uri, secrets: vscode.SecretStorage, globalState: vscode.Memento) {
     this.extensionUri = extensionUri;
@@ -139,6 +141,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
     this.agent.on("tool:end", (toolCallId: string, result: string, fileChange?: FileChangeData) => {
       if (fileChange) {
+        this.trackFileChange(fileChange);
         this.openDiffEditor(fileChange);
         const { oldContent: _, ...webviewFileChange } = fileChange;
         this.postMessage({ type: "toolEnd", toolCallId, result, fileChange: webviewFileChange as any });
@@ -160,11 +163,25 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       vscode.commands.executeCommand("setContext", "minimax.isStreaming", false);
       this.refreshQuota();
       this.autoSaveSession();
+      this.sendFileChangesList();
     });
   }
 
-  private openDiffEditor(fileChange: FileChangeData): void {
-    const key = `${Date.now()}-${fileChange.filePath}`;
+  private trackFileChange(fileChange: FileChangeData): void {
+    const existing = this.sessionFileChanges.get(fileChange.filePath);
+    if (existing) {
+      // Preserve the original oldContent, update the rest
+      this.sessionFileChanges.set(fileChange.filePath, {
+        ...fileChange,
+        oldContent: existing.oldContent,
+      });
+    } else {
+      this.sessionFileChanges.set(fileChange.filePath, fileChange);
+    }
+  }
+
+  private async openDiffEditor(fileChange: FileChangeData): Promise<void> {
+    const key = `${this.currentSessionId}-${fileChange.filePath}`;
     const oldUri = this.oldContentProvider.set(key, fileChange.oldContent);
     const newUri = vscode.Uri.file(fileChange.filePath);
     const fileName = basename(fileChange.filePath);
@@ -172,9 +189,71 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       ? `${fileName} (new file)`
       : `${fileName} (before ↔ after)`;
 
-    vscode.commands.executeCommand("vscode.diff", oldUri, newUri, title);
+    await vscode.commands.executeCommand("vscode.diff", oldUri, newUri, title);
+    await vscode.commands.executeCommand("workbench.action.keepEditor");
+  }
 
-    setTimeout(() => this.oldContentProvider.delete(key), 5_000);
+  private async reopenDiffEditor(filePath: string): Promise<void> {
+    const fileChange = this.sessionFileChanges.get(filePath);
+    if (!fileChange) return;
+
+    const key = `${this.currentSessionId}-${filePath}`;
+    const oldUri = this.oldContentProvider.set(key, fileChange.oldContent);
+    const newUri = vscode.Uri.file(filePath);
+    const fileName = basename(filePath);
+    const title = fileChange.isNewFile
+      ? `${fileName} (new file)`
+      : `${fileName} (before ↔ after)`;
+
+    await vscode.commands.executeCommand("vscode.diff", oldUri, newUri, title);
+    await vscode.commands.executeCommand("workbench.action.keepEditor");
+  }
+
+  private sendFileChangesList(): void {
+    const changes: FileChangeSummary[] = [];
+    for (const [filePath, fc] of this.sessionFileChanges) {
+      const addedLines = fc.diffLines.filter((l) => l.type === "added").length;
+      const removedLines = fc.diffLines.filter((l) => l.type === "removed").length;
+      changes.push({
+        filePath,
+        isNewFile: fc.isNewFile,
+        addedLines,
+        removedLines,
+        language: fc.language,
+      });
+    }
+    this.postMessage({ type: "fileChangesList", changes });
+  }
+
+  private async acceptFileChange(filePath: string): Promise<void> {
+    this.sessionFileChanges.delete(filePath);
+    this.oldContentProvider.delete(`${this.currentSessionId}-${filePath}`);
+    this.sendFileChangesList();
+  }
+
+  private async rejectFileChange(filePath: string): Promise<void> {
+    const fc = this.sessionFileChanges.get(filePath);
+    if (!fc) return;
+    if (fc.isNewFile) {
+      await unlink(filePath);
+    } else {
+      await writeFile(filePath, fc.oldContent, "utf-8");
+    }
+    this.sessionFileChanges.delete(filePath);
+    this.oldContentProvider.delete(`${this.currentSessionId}-${filePath}`);
+    this.sendFileChangesList();
+  }
+
+  private async acceptAllChanges(): Promise<void> {
+    for (const filePath of this.sessionFileChanges.keys()) {
+      await this.acceptFileChange(filePath);
+    }
+  }
+
+  private async rejectAllChanges(): Promise<void> {
+    for (const filePath of Array.from(this.sessionFileChanges.keys())) {
+      await this.rejectFileChange(filePath);
+    }
   }
 
   private async handleWebviewMessage(msg: WebviewToExtension): Promise<void> {
@@ -250,6 +329,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
       case "clearChat":
         this.agent?.clearHistory();
+        this.sessionFileChanges.clear();
+        this.oldContentProvider.clearAll();
         break;
 
       case "syncMessages":
@@ -258,6 +339,30 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
       case "requestFileCompletion":
         await this.getFileCompletions(msg.query);
+        break;
+
+      case "openFileChange":
+        await this.reopenDiffEditor(msg.filePath);
+        break;
+
+      case "getFileChanges":
+        this.sendFileChangesList();
+        break;
+
+      case "acceptFileChange":
+        await this.acceptFileChange(msg.filePath);
+        break;
+
+      case "rejectFileChange":
+        await this.rejectFileChange(msg.filePath);
+        break;
+
+      case "acceptAllChanges":
+        await this.acceptAllChanges();
+        break;
+
+      case "rejectAllChanges":
+        await this.rejectAllChanges();
         break;
     }
   }
@@ -280,6 +385,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // Start fresh
     this.currentSessionId = this.sessionManager.generateId();
     this.webviewMessages = [];
+    this.sessionFileChanges.clear();
+    this.oldContentProvider.clearAll();
     this.agent?.clearHistory();
     this.postMessage({ type: "sessionLoaded", messages: [] });
   }
@@ -293,6 +400,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
     this.currentSessionId = session.id;
     this.webviewMessages = session.webviewMessages;
+    this.sessionFileChanges.clear();
+    this.oldContentProvider.clearAll();
 
     // Restore agent history
     if (this.agent) {
@@ -344,6 +453,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   clearChat(): void {
     this.agent?.clearHistory();
+    this.sessionFileChanges.clear();
+    this.oldContentProvider.clearAll();
   }
 
   private postMessage(msg: ExtensionToWebview): void {

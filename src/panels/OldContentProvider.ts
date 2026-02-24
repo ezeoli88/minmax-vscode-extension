@@ -14,6 +14,10 @@ export class OldContentProvider implements vscode.TextDocumentContentProvider {
     this.contents.delete(key);
   }
 
+  clearAll(): void {
+    this.contents.clear();
+  }
+
   provideTextDocumentContent(uri: vscode.Uri): string {
     return this.contents.get(uri.path) ?? "";
   }

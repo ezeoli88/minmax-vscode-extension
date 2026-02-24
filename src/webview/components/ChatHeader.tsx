@@ -86,7 +86,7 @@ export function ChatHeader({
           onClick={handleHistoryClick}
           title="Chat history"
         >
-          &#128339;
+          &#9776;
         </button>
         <button
           className={`header-btn${openPanel === "settings" ? " header-btn-active" : ""}`}

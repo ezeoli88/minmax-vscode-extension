@@ -1,8 +1,10 @@
+import { useState } from "react";
 import type { ChatMessage } from "../App";
-import type { AgentMode, QuotaData, SessionSummaryData } from "../../shared/protocol";
+import type { AgentMode, FileChangeSummary, QuotaData, SessionSummaryData } from "../../shared/protocol";
 import { ChatHeader } from "./ChatHeader";
 import { MessageList } from "./MessageList";
 import { InputBox } from "./InputBox";
+import { ChangesModal } from "./ChangesModal";
 import { StatusBar } from "./StatusBar";
 
 interface ChatViewProps {
@@ -27,6 +29,13 @@ interface ChatViewProps {
   onSetApiKey: (key: string) => void;
   onRequestFileCompletion: (query: string) => void;
   onClear: () => void;
+  fileChanges: FileChangeSummary[];
+  onGetFileChanges: () => void;
+  onOpenFileChange: (filePath: string) => void;
+  onAcceptFileChange: (filePath: string) => void;
+  onRejectFileChange: (filePath: string) => void;
+  onAcceptAllChanges: () => void;
+  onRejectAllChanges: () => void;
 }
 
 export function ChatView({
@@ -51,7 +60,23 @@ export function ChatView({
   onSetApiKey,
   onRequestFileCompletion,
   onClear,
+  fileChanges,
+  onGetFileChanges,
+  onOpenFileChange,
+  onAcceptFileChange,
+  onRejectFileChange,
+  onAcceptAllChanges,
+  onRejectAllChanges,
 }: ChatViewProps) {
+  const [showChangesModal, setShowChangesModal] = useState(false);
+
+  const showViewChangesButton = !isLoading && fileChanges.length > 0;
+
+  const handleOpenModal = () => {
+    onGetFileChanges();
+    setShowChangesModal(true);
+  };
+
   return (
     <div className="chat-view">
       <ChatHeader
@@ -63,7 +88,12 @@ export function ChatView({
         onDeleteSession={onDeleteSession}
         onSetApiKey={onSetApiKey}
       />
-      <MessageList messages={messages} isLoading={isLoading} />
+      <MessageList
+        messages={messages}
+        isLoading={isLoading}
+        showViewChangesButton={showViewChangesButton}
+        onViewChanges={handleOpenModal}
+      />
       <InputBox
         isLoading={isLoading}
         mode={mode}
@@ -82,6 +112,17 @@ export function ChatView({
         onModelChange={onModelChange}
         onClear={onClear}
       />
+      {showChangesModal && fileChanges.length > 0 && (
+        <ChangesModal
+          fileChanges={fileChanges}
+          onClose={() => setShowChangesModal(false)}
+          onAcceptAllChanges={onAcceptAllChanges}
+          onRejectAllChanges={onRejectAllChanges}
+          onOpenFileChange={onOpenFileChange}
+          onAcceptFileChange={onAcceptFileChange}
+          onRejectFileChange={onRejectFileChange}
+        />
+      )}
     </div>
   );
 }

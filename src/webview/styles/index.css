@@ -832,6 +832,297 @@ body {
   color: var(--dim-text);
 }
 
+/* Changes panel */
+.changes-list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-bottom: 4px;
+}
+
+.changes-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.changes-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.changes-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+
+.changes-item:last-child {
+  border-bottom: none;
+}
+
+.changes-item:hover {
+  background: var(--border);
+}
+
+.changes-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.changes-item-name {
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.changes-badge-new {
+  background: var(--success);
+  color: var(--bg);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.changes-item-path {
+  font-size: 10px;
+  color: var(--dim-text);
+}
+
+.changes-item-stats {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+/* "View Changes" button in chat */
+.view-changes-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 8px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.view-changes-btn:hover {
+  opacity: 0.85;
+}
+
+/* Changes modal overlay */
+.changes-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.changes-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 100%;
+  max-height: 80%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.changes-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.changes-modal-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.changes-modal-close {
+  background: none;
+  border: none;
+  color: var(--dim-text);
+  font-size: 20px;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.changes-modal-close:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.changes-modal-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.changes-modal-btn {
+  flex: 1;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.changes-modal-btn-accept {
+  background: var(--success);
+  color: var(--bg);
+}
+
+.changes-modal-btn-accept:hover {
+  opacity: 0.85;
+}
+
+.changes-modal-btn-reject {
+  background: var(--error);
+  color: var(--bg);
+}
+
+.changes-modal-btn-reject:hover {
+  opacity: 0.85;
+}
+
+.changes-modal-files {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.changes-modal-files::-webkit-scrollbar {
+  width: 5px;
+}
+
+.changes-modal-files::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.changes-modal-file {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+
+.changes-modal-file:last-child {
+  border-bottom: none;
+}
+
+.changes-modal-file-info {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.changes-modal-file-info:hover .changes-modal-file-name {
+  text-decoration: underline;
+}
+
+.changes-modal-file-name {
+  font-size: 12px;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.changes-modal-file-path {
+  font-size: 10px;
+  color: var(--dim-text);
+}
+
+.changes-modal-file-stats {
+  display: flex;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.changes-modal-file-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.changes-modal-icon-btn {
+  background: none;
+  border: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.changes-modal-icon-accept {
+  color: var(--success);
+}
+
+.changes-modal-icon-accept:hover {
+  background: rgba(158, 206, 106, 0.2);
+}
+
+.changes-modal-icon-reject {
+  color: var(--error);
+}
+
+.changes-modal-icon-reject:hover {
+  background: rgba(247, 118, 142, 0.2);
+}
+
 /* Diff view */
 .diff-view {
   border: 1px solid var(--border);

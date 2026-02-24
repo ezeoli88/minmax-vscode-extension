@@ -1,6 +1,6 @@
 import { useReducer, useEffect, useRef } from "react";
 import { ChatView } from "./components/ChatView";
-import type { AgentMode, ExtensionToWebview, SerializedToolCall, FileChangeData, QuotaData, SessionSummaryData } from "../shared/protocol";
+import type { AgentMode, ExtensionToWebview, SerializedToolCall, FileChangeData, FileChangeSummary, QuotaData, SessionSummaryData } from "../shared/protocol";
 
 const vscode = acquireVsCodeApi();
 
@@ -26,6 +26,7 @@ interface AppState {
   fileCompletions: string[];
   sessions: SessionSummaryData[];
   hasApiKey: boolean;
+  fileChanges: FileChangeSummary[];
 }
 
 type AppAction =
@@ -44,6 +45,7 @@ type AppAction =
   | { type: "SESSIONS_LIST"; sessions: SessionSummaryData[] }
   | { type: "SESSION_LOADED"; messages: ChatMessage[] }
   | { type: "API_KEY_STATUS"; hasKey: boolean }
+  | { type: "FILE_CHANGES_LIST"; changes: FileChangeSummary[] }
   | { type: "SEND_MESSAGE"; text: string }
   | { type: "CLEAR_CHAT" };
 
@@ -58,6 +60,7 @@ const initialState: AppState = {
   fileCompletions: [],
   sessions: [],
   hasApiKey: false,
+  fileChanges: [],
 };
 
 function reducer(state: AppState, action: AppAction): AppState {
@@ -191,13 +194,16 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, sessions: action.sessions };
 
     case "SESSION_LOADED":
-      return { ...state, messages: action.messages, totalTokens: 0, isLoading: false };
+      return { ...state, messages: action.messages, totalTokens: 0, isLoading: false, fileChanges: [] };
 
     case "API_KEY_STATUS":
       return { ...state, hasApiKey: action.hasKey };
 
     case "CLEAR_CHAT":
-      return { ...state, messages: [], totalTokens: 0, quota: state.quota };
+      return { ...state, messages: [], totalTokens: 0, quota: state.quota, fileChanges: [] };
+
+    case "FILE_CHANGES_LIST":
+      return { ...state, fileChanges: action.changes };
 
     default:
       return state;
@@ -263,6 +269,9 @@ export function App() {
         case "fileCompletions":
           dispatch({ type: "FILE_COMPLETIONS", files: msg.files });
           break;
+        case "fileChangesList":
+          dispatch({ type: "FILE_CHANGES_LIST", changes: msg.changes });
+          break;
       }
     };
 
@@ -322,6 +331,30 @@ export function App() {
     vscode.postMessage({ type: "setApiKey", key });
   };
 
+  const handleGetFileChanges = () => {
+    vscode.postMessage({ type: "getFileChanges" });
+  };
+
+  const handleOpenFileChange = (filePath: string) => {
+    vscode.postMessage({ type: "openFileChange", filePath });
+  };
+
+  const handleAcceptFileChange = (filePath: string) => {
+    vscode.postMessage({ type: "acceptFileChange", filePath });
+  };
+
+  const handleRejectFileChange = (filePath: string) => {
+    vscode.postMessage({ type: "rejectFileChange", filePath });
+  };
+
+  const handleAcceptAllChanges = () => {
+    vscode.postMessage({ type: "acceptAllChanges" });
+  };
+
+  const handleRejectAllChanges = () => {
+    vscode.postMessage({ type: "rejectAllChanges" });
+  };
+
   return (
     <div className="app" data-theme={state.theme}>
       <ChatView
@@ -346,6 +379,13 @@ export function App() {
         onSetApiKey={handleSetApiKey}
         onRequestFileCompletion={handleRequestFileCompletion}
         onClear={handleClear}
+        fileChanges={state.fileChanges}
+        onGetFileChanges={handleGetFileChanges}
+        onOpenFileChange={handleOpenFileChange}
+        onAcceptFileChange={handleAcceptFileChange}
+        onRejectFileChange={handleRejectFileChange}
+        onAcceptAllChanges={handleAcceptAllChanges}
+        onRejectAllChanges={handleRejectAllChanges}
       />
     </div>
   );
