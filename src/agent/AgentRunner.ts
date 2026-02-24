@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 import type OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { streamChat, type AccumulatedToolCall } from "../core/api";
-import { getToolDefinitions, getReadOnlyToolDefinitions, executeTool } from "../core/tools";
+import { getToolDefinitions, getReadOnlyToolDefinitions, executeTool, READ_ONLY_TOOL_NAMES } from "../core/tools";
 import { killActiveProcess } from "../tools/bash";
 import { parseModelOutput, coerceArg, type ParsedToolCall } from "../core/parser";
 import { existsSync, readFileSync } from "fs";
@@ -66,7 +66,12 @@ export class AgentRunner extends EventEmitter {
 Working directory: ${this.cwd}
 
 Available tools: read_file, glob, grep, list_directory (read-only).
-You CANNOT write, edit, or run commands. Tell the user to switch to BUILDER mode for modifications.
+You CANNOT write, edit, or run commands. Do NOT attempt to call tools like edit_file, write_file, or bash.
+
+IMPORTANT: When the user asks you to implement, modify, create, or delete anything, you MUST:
+1. Explain what changes would be needed
+2. Explicitly tell the user to switch to BUILDER mode to apply the changes (they can press Tab in the input box or click the mode toggle in the status bar)
+
 Focus on: analysis, planning, explaining code, suggesting strategies.`;
     } else {
       systemPrompt = `You are a coding assistant in VS Code.
@@ -261,7 +266,11 @@ Be concise. Show relevant code, skip obvious explanations.`;
 
             let toolResult: string;
             try {
-              toolResult = await executeTool(toolName, args, abort.signal);
+              if (this.mode === "PLAN" && !READ_ONLY_TOOL_NAMES.has(toolName)) {
+                toolResult = `Error: Tool "${toolName}" is not available in PLAN mode. You MUST tell the user to switch to BUILDER mode (by pressing Tab or clicking the mode toggle) to apply these changes.`;
+              } else {
+                toolResult = await executeTool(toolName, args, abort.signal);
+              }
             } catch (err: any) {
               toolResult = `Error: ${err.message}`;
             }

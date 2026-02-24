@@ -37,7 +37,7 @@ for (const tool of builtinTools) {
   TOOL_REGISTRY.set(tool.definition.function.name, tool.execute);
 }
 
-const READ_ONLY_TOOLS = new Set(["read_file", "glob", "grep", "list_directory"]);
+export const READ_ONLY_TOOL_NAMES = new Set(["read_file", "glob", "grep", "list_directory"]);
 
 export function getToolDefinitions(): OpenAI.Chat.Completions.ChatCompletionTool[] {
   const builtinDefs = builtinTools.map((t) => t.definition);
@@ -47,7 +47,7 @@ export function getToolDefinitions(): OpenAI.Chat.Completions.ChatCompletionTool
 
 export function getReadOnlyToolDefinitions(): OpenAI.Chat.Completions.ChatCompletionTool[] {
   return builtinTools
-    .filter((t) => READ_ONLY_TOOLS.has(t.definition.function.name))
+    .filter((t) => READ_ONLY_TOOL_NAMES.has(t.definition.function.name))
     .map((t) => t.definition);
 }
 
