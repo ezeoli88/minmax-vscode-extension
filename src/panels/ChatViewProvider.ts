@@ -154,6 +154,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.postMessage({ type: "tokensUpdate", total });
     });
 
+    this.agent.on("context:update", (promptTokens: number, maxTokens: number) => {
+      this.postMessage({ type: "contextUpdate", promptTokens, maxTokens });
+    });
+
     this.agent.on("error", (message: string) => {
       this.postMessage({ type: "error", message });
     });
@@ -333,6 +337,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.oldContentProvider.clearAll();
         break;
 
+      case "compactContext":
+        if (this.agent) {
+          const result = await this.agent.compactContext();
+          this.postMessage({ type: "compactResult", success: result.success, promptTokens: result.promptTokens });
+        }
+        break;
+
       case "syncMessages":
         this.webviewMessages = msg.messages;
         break;
@@ -475,7 +486,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource};">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource};">
   <link href="${styleUri}" rel="stylesheet">
   <title>MiniMax Chat</title>
 </head>

@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useRef } from "react";
+import { useReducer, useEffect, useRef, useCallback } from "react";
 import { ChatView } from "./components/ChatView";
 import type { AgentMode, ExtensionToWebview, SerializedToolCall, FileChangeData, FileChangeSummary, QuotaData, SessionSummaryData } from "../shared/protocol";
 
@@ -22,6 +22,9 @@ interface AppState {
   theme: string;
   mode: AgentMode;
   totalTokens: number;
+  promptTokens: number;
+  maxContextTokens: number;
+  isCompacting: boolean;
   quota: QuotaData | null;
   fileCompletions: string[];
   sessions: SessionSummaryData[];
@@ -46,6 +49,9 @@ type AppAction =
   | { type: "SESSION_LOADED"; messages: ChatMessage[] }
   | { type: "API_KEY_STATUS"; hasKey: boolean }
   | { type: "FILE_CHANGES_LIST"; changes: FileChangeSummary[] }
+  | { type: "CONTEXT_UPDATE"; promptTokens: number; maxTokens: number }
+  | { type: "COMPACT_START" }
+  | { type: "COMPACT_RESULT"; success: boolean; promptTokens: number }
   | { type: "SEND_MESSAGE"; text: string }
   | { type: "CLEAR_CHAT" };
 
@@ -56,6 +62,9 @@ const initialState: AppState = {
   theme: "tokyo-night",
   mode: "BUILDER",
   totalTokens: 0,
+  promptTokens: 0,
+  maxContextTokens: 200_000,
+  isCompacting: false,
   quota: null,
   fileCompletions: [],
   sessions: [],
@@ -194,13 +203,29 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, sessions: action.sessions };
 
     case "SESSION_LOADED":
-      return { ...state, messages: action.messages, totalTokens: 0, isLoading: false, fileChanges: [] };
+      return { ...state, messages: action.messages, totalTokens: 0, promptTokens: 0, isLoading: false, fileChanges: [] };
 
     case "API_KEY_STATUS":
       return { ...state, hasApiKey: action.hasKey };
 
+    case "CONTEXT_UPDATE":
+      return { ...state, promptTokens: action.promptTokens, maxContextTokens: action.maxTokens };
+
+    case "COMPACT_START":
+      return { ...state, isCompacting: true };
+
+    case "COMPACT_RESULT":
+      return {
+        ...state,
+        isCompacting: false,
+        promptTokens: action.promptTokens,
+        messages: action.success
+          ? [{ role: "assistant" as const, content: "Context compacted successfully. The conversation history has been summarized to free up context space. You can continue working normally." }]
+          : state.messages,
+      };
+
     case "CLEAR_CHAT":
-      return { ...state, messages: [], totalTokens: 0, quota: state.quota, fileChanges: [] };
+      return { ...state, messages: [], totalTokens: 0, promptTokens: 0, quota: state.quota, fileChanges: [] };
 
     case "FILE_CHANGES_LIST":
       return { ...state, fileChanges: action.changes };
@@ -271,6 +296,12 @@ export function App() {
           break;
         case "fileChangesList":
           dispatch({ type: "FILE_CHANGES_LIST", changes: msg.changes });
+          break;
+        case "contextUpdate":
+          dispatch({ type: "CONTEXT_UPDATE", promptTokens: msg.promptTokens, maxTokens: msg.maxTokens });
+          break;
+        case "compactResult":
+          dispatch({ type: "COMPACT_RESULT", success: msg.success, promptTokens: msg.promptTokens });
           break;
       }
     };
@@ -355,6 +386,11 @@ export function App() {
     vscode.postMessage({ type: "rejectAllChanges" });
   };
 
+  const handleCompact = useCallback(() => {
+    dispatch({ type: "COMPACT_START" });
+    vscode.postMessage({ type: "compactContext" });
+  }, []);
+
   return (
     <div className="app" data-theme={state.theme}>
       <ChatView
@@ -364,6 +400,9 @@ export function App() {
         mode={state.mode}
         theme={state.theme}
         totalTokens={state.totalTokens}
+        promptTokens={state.promptTokens}
+        maxContextTokens={state.maxContextTokens}
+        isCompacting={state.isCompacting}
         quota={state.quota}
         sessions={state.sessions}
         hasApiKey={state.hasApiKey}
@@ -379,6 +418,7 @@ export function App() {
         onSetApiKey={handleSetApiKey}
         onRequestFileCompletion={handleRequestFileCompletion}
         onClear={handleClear}
+        onCompact={handleCompact}
         fileChanges={state.fileChanges}
         onGetFileChanges={handleGetFileChanges}
         onOpenFileChange={handleOpenFileChange}

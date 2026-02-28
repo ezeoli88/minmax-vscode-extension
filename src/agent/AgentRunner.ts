@@ -11,6 +11,8 @@ import { join, extname, isAbsolute, resolve } from "path";
 import { structuredPatch } from "diff";
 import type { AgentMode, SerializedToolCall, DiffLine, FileChangeData } from "../shared/protocol";
 
+export const MAX_CONTEXT_TOKENS = 200_000;
+
 export class AgentRunner extends EventEmitter {
   private client: OpenAI;
   private model: string;
@@ -18,6 +20,7 @@ export class AgentRunner extends EventEmitter {
   private cwd: string;
   private history: ChatCompletionMessageParam[] = [];
   private totalTokens = 0;
+  private promptTokens = 0;
   private abortController: AbortController | null = null;
 
   constructor(opts: { client: OpenAI; model: string; mode: AgentMode; cwd: string }) {
@@ -44,6 +47,7 @@ export class AgentRunner extends EventEmitter {
   clearHistory() {
     this.history = [];
     this.totalTokens = 0;
+    this.promptTokens = 0;
   }
 
   loadHistory(msgs: ChatCompletionMessageParam[]) {
@@ -56,6 +60,10 @@ export class AgentRunner extends EventEmitter {
 
   getTotalTokens(): number {
     return this.totalTokens;
+  }
+
+  getPromptTokens(): number {
+    return this.promptTokens;
   }
 
   private getSystemPrompt(): string {
@@ -174,6 +182,9 @@ Be concise. Show relevant code, skip obvious explanations.`;
 
         this.totalTokens += result.usage?.total_tokens || 0;
         this.emit("tokens:update", this.totalTokens);
+
+        this.promptTokens = result.usage?.prompt_tokens || 0;
+        this.emit("context:update", this.promptTokens, MAX_CONTEXT_TOKENS);
 
         // Final parse
         const parsed = parseModelOutput(rawBuffer);
@@ -298,6 +309,67 @@ Be concise. Show relevant code, skip obvious explanations.`;
     } finally {
       this.abortController = null;
       this.emit("done");
+    }
+  }
+
+  async compactContext(): Promise<{ success: boolean; promptTokens: number }> {
+    if (this.history.length === 0) {
+      return { success: true, promptTokens: this.promptTokens };
+    }
+
+    try {
+      const summarySystemPrompt = `You are a conversation summarizer. Your task is to create a concise but comprehensive summary of the conversation that has taken place. This summary will replace the full conversation history to reduce context usage while preserving essential information.
+
+Preserve:
+- Key decisions and requirements discussed
+- Current state of the task and what was accomplished
+- Important file paths, code snippets, and technical details referenced
+- Any pending actions or next steps
+- Errors encountered and how they were resolved
+
+Format as a structured summary that allows the assistant to continue the conversation seamlessly. Be concise but do not omit critical details.`;
+
+      const messages: ChatCompletionMessageParam[] = [
+        { role: "system", content: summarySystemPrompt },
+        ...this.history,
+        { role: "user", content: "Summarize the conversation above into a concise context document that preserves all essential information for continuing the work." },
+      ];
+
+      const result = await streamChat(
+        this.client,
+        this.model,
+        messages,
+        undefined,
+        {},
+      );
+
+      const summary = result.content;
+      if (!summary) {
+        return { success: false, promptTokens: this.promptTokens };
+      }
+
+      // Replace history with the compacted summary
+      this.history = [
+        {
+          role: "user",
+          content: `[Previous conversation summary]\n\n${summary}\n\n[End of summary — the conversation continues from here]`,
+        },
+        {
+          role: "assistant",
+          content: "Understood. I have the context from our previous conversation. I'm ready to continue. What would you like to do next?",
+        },
+      ];
+
+      // Update prompt tokens estimate based on the compression result
+      this.promptTokens = result.usage?.prompt_tokens
+        ? Math.round(result.usage.prompt_tokens * 0.15)
+        : Math.round(this.promptTokens * 0.2);
+
+      this.emit("context:update", this.promptTokens, MAX_CONTEXT_TOKENS);
+      return { success: true, promptTokens: this.promptTokens };
+    } catch (err: any) {
+      this.emit("error", `Context compression failed: ${err.message}`);
+      return { success: false, promptTokens: this.promptTokens };
     }
   }
 
