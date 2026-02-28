@@ -31,6 +31,7 @@ export type WebviewToExtension =
   | { type: "getSessions" }
   | { type: "setApiKey"; key: string }
   | { type: "clearChat" }
+  | { type: "compactContext" }
   | { type: "syncMessages"; messages: any[] }
   | { type: "requestFileCompletion"; query: string }
   | { type: "openFileChange"; filePath: string }
@@ -88,6 +89,8 @@ export type ExtensionToWebview =
   | { type: "toolEnd"; toolCallId: string; result: string; fileChange?: FileChangeData }
   | { type: "tokensUpdate"; total: number }
   | { type: "quotaUpdate"; quota: QuotaData }
+  | { type: "contextUpdate"; promptTokens: number; maxTokens: number }
+  | { type: "compactResult"; success: boolean; promptTokens: number }
   | { type: "error"; message: string }
   | { type: "done" }
   | { type: "configUpdate"; model: string; theme: string; mode: AgentMode }

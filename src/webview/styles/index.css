@@ -308,6 +308,96 @@ body {
   opacity: 0.85;
 }
 
+/* Context bar */
+.context-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 24px;
+}
+
+.context-bar-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--dim-text);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.context-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.context-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.context-fill-ok {
+  background: var(--success);
+}
+
+.context-fill-warning {
+  background: var(--warning);
+}
+
+.context-fill-critical {
+  background: var(--error);
+}
+
+.context-bar-tokens {
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.context-bar-tokens.context-fill-ok {
+  color: var(--success);
+}
+
+.context-bar-tokens.context-fill-warning {
+  color: var(--warning);
+}
+
+.context-bar-tokens.context-fill-critical {
+  color: var(--error);
+}
+
+.context-bar-compact-btn {
+  background: none;
+  border: 1px solid var(--warning);
+  color: var(--warning);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.context-bar-compact-btn:hover:not(:disabled) {
+  background: var(--warning);
+  color: var(--bg);
+}
+
+.context-bar-compact-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* Message list */
 .message-list {
   flex: 1;

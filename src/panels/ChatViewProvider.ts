@@ -154,6 +154,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.postMessage({ type: "tokensUpdate", total });
     });
 
+    this.agent.on("context:update", (promptTokens: number, maxTokens: number) => {
+      this.postMessage({ type: "contextUpdate", promptTokens, maxTokens });
+    });
+
     this.agent.on("error", (message: string) => {
       this.postMessage({ type: "error", message });
     });
@@ -331,6 +335,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.agent?.clearHistory();
         this.sessionFileChanges.clear();
         this.oldContentProvider.clearAll();
+        break;
+
+      case "compactContext":
+        if (this.agent) {
+          const result = await this.agent.compactContext();
+          this.postMessage({ type: "compactResult", success: result.success, promptTokens: result.promptTokens });
+        }
         break;
 
       case "syncMessages":

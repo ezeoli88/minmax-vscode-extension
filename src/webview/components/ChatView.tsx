@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ChatMessage } from "../App";
 import type { AgentMode, FileChangeSummary, QuotaData, SessionSummaryData } from "../../shared/protocol";
 import { ChatHeader } from "./ChatHeader";
+import { ContextBar } from "./ContextBar";
 import { MessageList } from "./MessageList";
 import { InputBox } from "./InputBox";
 import { ChangesModal } from "./ChangesModal";
@@ -14,6 +15,9 @@ interface ChatViewProps {
   mode: AgentMode;
   theme: string;
   totalTokens: number;
+  promptTokens: number;
+  maxContextTokens: number;
+  isCompacting: boolean;
   quota: QuotaData | null;
   sessions: SessionSummaryData[];
   hasApiKey: boolean;
@@ -29,6 +33,7 @@ interface ChatViewProps {
   onSetApiKey: (key: string) => void;
   onRequestFileCompletion: (query: string) => void;
   onClear: () => void;
+  onCompact: () => void;
   fileChanges: FileChangeSummary[];
   onGetFileChanges: () => void;
   onOpenFileChange: (filePath: string) => void;
@@ -45,6 +50,9 @@ export function ChatView({
   mode,
   theme,
   totalTokens,
+  promptTokens,
+  maxContextTokens,
+  isCompacting,
   quota,
   sessions,
   hasApiKey,
@@ -60,6 +68,7 @@ export function ChatView({
   onSetApiKey,
   onRequestFileCompletion,
   onClear,
+  onCompact,
   fileChanges,
   onGetFileChanges,
   onOpenFileChange,
@@ -87,6 +96,12 @@ export function ChatView({
         onLoadSession={onLoadSession}
         onDeleteSession={onDeleteSession}
         onSetApiKey={onSetApiKey}
+      />
+      <ContextBar
+        promptTokens={promptTokens}
+        maxTokens={maxContextTokens}
+        isCompacting={isCompacting}
+        onCompact={onCompact}
       />
       <MessageList
         messages={messages}
