@@ -1,3 +1,5 @@
+@import "@xterm/xterm/css/xterm.css";
+
 /* Theme CSS variables */
 [data-theme="tokyo-night"] {
   --bg: #1a1b26;
@@ -362,17 +364,6 @@ body {
   white-space: nowrap;
 }
 
-.context-bar-tokens.context-fill-ok {
-  color: var(--success);
-}
-
-.context-bar-tokens.context-fill-warning {
-  color: var(--warning);
-}
-
-.context-bar-tokens.context-fill-critical {
-  color: var(--error);
-}
 
 .context-bar-compact-btn {
   background: none;
@@ -592,6 +583,15 @@ body {
   max-height: 200px;
   overflow-y: auto;
   color: var(--dim-text);
+}
+
+/* Terminal output (xterm.js) */
+.terminal-output {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  max-height: 250px;
+  overflow: hidden;
+  margin: 6px 0;
 }
 
 /* Reasoning block */

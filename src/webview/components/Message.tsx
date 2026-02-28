@@ -1,6 +1,9 @@
 import type { ChatMessage } from "../App";
 import { DiffView } from "./DiffView";
 import { Markdown } from "./Markdown";
+import { TerminalOutput } from "./TerminalOutput";
+
+const TERMINAL_TOOLS = new Set(["bash", "bash_bg"]);
 
 interface MessageProps {
   message: ChatMessage;
@@ -25,6 +28,8 @@ export function Message({ message }: MessageProps) {
         <div className="message-content tool-content">
           {message.fileChange ? (
             <DiffView data={message.fileChange} />
+          ) : TERMINAL_TOOLS.has(message.toolName || "") && message.content !== "Running..." ? (
+            <TerminalOutput content={message.content || ""} />
           ) : (
             <pre>{message.content}</pre>
           )}
