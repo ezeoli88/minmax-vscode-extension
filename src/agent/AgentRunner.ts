@@ -50,8 +50,11 @@ export class AgentRunner extends EventEmitter {
     this.promptTokens = 0;
   }
 
-  loadHistory(msgs: ChatCompletionMessageParam[]) {
+  loadHistory(msgs: ChatCompletionMessageParam[], promptTokens?: number) {
     this.history = msgs;
+    if (promptTokens !== undefined) {
+      this.promptTokens = promptTokens;
+    }
   }
 
   getHistory(): ChatCompletionMessageParam[] {

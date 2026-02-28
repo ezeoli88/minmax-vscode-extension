@@ -399,7 +399,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.sessionFileChanges.clear();
     this.oldContentProvider.clearAll();
     this.agent?.clearHistory();
-    this.postMessage({ type: "sessionLoaded", messages: [] });
+    this.postMessage({ type: "sessionLoaded", messages: [], promptTokens: 0, maxTokens: 200_000 });
   }
 
   private async handleLoadSession(sessionId: string): Promise<void> {
@@ -417,10 +417,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // Restore agent history
     if (this.agent) {
       this.agent.clearHistory();
-      this.agent.loadHistory(session.apiHistory);
+      this.agent.loadHistory(session.apiHistory, session.promptTokens);
     }
 
-    this.postMessage({ type: "sessionLoaded", messages: session.webviewMessages });
+    this.postMessage({
+      type: "sessionLoaded",
+      messages: session.webviewMessages,
+      promptTokens: session.promptTokens ?? 0,
+      maxTokens: 200_000,
+    });
   }
 
   private async autoSaveSession(): Promise<void> {
@@ -428,7 +433,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     await this.sessionManager.saveSession(
       this.currentSessionId,
       this.agent.getHistory(),
-      this.webviewMessages
+      this.webviewMessages,
+      this.agent.getPromptTokens()
     );
   }
 

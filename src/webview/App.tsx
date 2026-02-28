@@ -46,7 +46,7 @@ type AppAction =
   | { type: "CONFIG_UPDATE"; model: string; theme: string; mode: AgentMode }
   | { type: "FILE_COMPLETIONS"; files: string[] }
   | { type: "SESSIONS_LIST"; sessions: SessionSummaryData[] }
-  | { type: "SESSION_LOADED"; messages: ChatMessage[] }
+  | { type: "SESSION_LOADED"; messages: ChatMessage[]; promptTokens?: number; maxContextTokens?: number }
   | { type: "API_KEY_STATUS"; hasKey: boolean }
   | { type: "FILE_CHANGES_LIST"; changes: FileChangeSummary[] }
   | { type: "CONTEXT_UPDATE"; promptTokens: number; maxTokens: number }
@@ -203,7 +203,7 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, sessions: action.sessions };
 
     case "SESSION_LOADED":
-      return { ...state, messages: action.messages, totalTokens: 0, promptTokens: 0, isLoading: false, fileChanges: [] };
+      return { ...state, messages: action.messages, totalTokens: 0, promptTokens: action.promptTokens ?? 0, maxContextTokens: action.maxContextTokens ?? 200_000, isLoading: false, fileChanges: [] };
 
     case "API_KEY_STATUS":
       return { ...state, hasApiKey: action.hasKey };
@@ -286,7 +286,7 @@ export function App() {
           dispatch({ type: "SESSIONS_LIST", sessions: msg.sessions });
           break;
         case "sessionLoaded":
-          dispatch({ type: "SESSION_LOADED", messages: msg.messages });
+          dispatch({ type: "SESSION_LOADED", messages: msg.messages, promptTokens: msg.promptTokens, maxContextTokens: msg.maxTokens });
           break;
         case "apiKeyStatus":
           dispatch({ type: "API_KEY_STATUS", hasKey: msg.hasKey });

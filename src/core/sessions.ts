@@ -16,6 +16,7 @@ export interface SessionData {
   updatedAt: number;
   apiHistory: ChatCompletionMessageParam[];
   webviewMessages: any[]; // ChatMessage from webview
+  promptTokens?: number;
 }
 
 const SESSIONS_KEY = "minimax.sessions";
@@ -68,7 +69,8 @@ export class SessionManager {
   async saveSession(
     id: string,
     apiHistory: ChatCompletionMessageParam[],
-    webviewMessages: any[]
+    webviewMessages: any[],
+    promptTokens?: number
   ): Promise<void> {
     const userMessages = webviewMessages.filter((m: any) => m.role === "user");
     if (userMessages.length === 0) return; // don't save empty sessions
@@ -86,6 +88,7 @@ export class SessionManager {
       updatedAt: now,
       apiHistory,
       webviewMessages,
+      promptTokens: promptTokens ?? 0,
     };
 
     if (existing >= 0) {

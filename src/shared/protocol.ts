@@ -95,7 +95,7 @@ export type ExtensionToWebview =
   | { type: "done" }
   | { type: "configUpdate"; model: string; theme: string; mode: AgentMode }
   | { type: "sessionsList"; sessions: SessionSummaryData[] }
-  | { type: "sessionLoaded"; messages: any[] }
+  | { type: "sessionLoaded"; messages: any[]; promptTokens: number; maxTokens: number }
   | { type: "apiKeyStatus"; hasKey: boolean }
   | { type: "fileCompletions"; files: string[] }
   | { type: "fileChangesList"; changes: FileChangeSummary[] };
