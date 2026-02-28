@@ -34,7 +34,7 @@ export function ContextBar({ promptTokens, maxTokens, isCompacting, onCompact }:
           style={{ width: `${percentage}%` }}
         />
       </div>
-      <span className={`context-bar-tokens ${colorClass}`}>
+      <span className="context-bar-tokens">
         {formatTokens(promptTokens)} / {formatTokens(maxTokens)}
       </span>
       {showCompact && (
