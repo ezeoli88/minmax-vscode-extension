@@ -57,6 +57,14 @@ export class AgentRunner extends EventEmitter {
     }
   }
 
+  truncateHistory(length: number) {
+    this.history = this.history.slice(0, length);
+  }
+
+  setPromptTokens(tokens: number) {
+    this.promptTokens = tokens;
+  }
+
   getHistory(): ChatCompletionMessageParam[] {
     return this.history;
   }

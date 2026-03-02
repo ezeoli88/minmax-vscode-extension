@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
-import { writeFile, unlink } from "fs/promises";
+import { writeFile, unlink, readFile } from "fs/promises";
+import { existsSync } from "fs";
 import { basename } from "path";
 import type OpenAI from "openai";
 import { createClient, fetchCodingPlanRemains } from "../core/api";
@@ -7,7 +8,7 @@ import { AgentRunner } from "../agent/AgentRunner";
 import { loadConfig, getApiKey, setApiKey, updateConfig } from "../config/settings";
 import { themes } from "../config/themes";
 import { SessionManager } from "../core/sessions";
-import type { AgentMode, ExtensionToWebview, FileChangeData, FileChangeSummary, WebviewToExtension } from "../shared/protocol";
+import type { AgentMode, CheckpointData, CheckpointSummary, ExtensionToWebview, FileChangeData, FileChangeSummary, WebviewToExtension } from "../shared/protocol";
 import { setCwd } from "../tools/cwd";
 import { setOpenBrowserHandler } from "../tools/vscode-bridge";
 import { processManager } from "../core/process-manager";
@@ -32,6 +33,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private disposables: vscode.Disposable[] = [];
   private oldContentProvider = new OldContentProvider();
   private sessionFileChanges = new Map<string, FileChangeData>();
+  private checkpoints: CheckpointData[] = [];
+  private originalFileContents = new Map<string, { content: string; existed: boolean }>();
 
   constructor(extensionUri: vscode.Uri, secrets: vscode.SecretStorage, globalState: vscode.Memento) {
     this.extensionUri = extensionUri;
@@ -172,6 +175,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private trackFileChange(fileChange: FileChangeData): void {
+    // Track original file content for checkpoint restore
+    if (!this.originalFileContents.has(fileChange.filePath)) {
+      this.originalFileContents.set(fileChange.filePath, {
+        content: fileChange.oldContent,
+        existed: !fileChange.isNewFile,
+      });
+    }
+
     const existing = this.sessionFileChanges.get(fileChange.filePath);
     if (existing) {
       // Preserve the original oldContent, update the rest
@@ -260,6 +271,148 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  private async createCheckpoint(userMessage: string): Promise<void> {
+    const label = userMessage.length <= 40
+      ? `Before: "${userMessage}"`
+      : `Before: "${userMessage.slice(0, 37)}..."`;
+
+    const fileSnapshots: CheckpointData["fileSnapshots"] = [];
+
+    // Snapshot current on-disk content for every file the agent has touched
+    for (const filePath of this.originalFileContents.keys()) {
+      try {
+        if (existsSync(filePath)) {
+          const content = await readFile(filePath, "utf-8");
+          fileSnapshots.push({ filePath, content, existed: true });
+        } else {
+          fileSnapshots.push({ filePath, content: null, existed: false });
+        }
+      } catch {
+        // Skip files we can't read
+      }
+    }
+
+    const checkpoint: CheckpointData = {
+      id: `cp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: Date.now(),
+      messageIndex: this.webviewMessages.length,
+      apiHistoryLength: this.agent?.getHistory().length ?? 0,
+      fileSnapshots,
+      promptTokens: this.agent?.getPromptTokens() ?? 0,
+      label,
+    };
+
+    this.checkpoints.push(checkpoint);
+
+    // Limit to 20 checkpoints, keep the first one (initial state)
+    if (this.checkpoints.length > 20) {
+      this.checkpoints.splice(1, 1);
+    }
+
+    this.sendCheckpointsUpdate();
+  }
+
+  private async restoreCheckpoint(checkpointId: string): Promise<void> {
+    const cpIndex = this.checkpoints.findIndex(cp => cp.id === checkpointId);
+    if (cpIndex < 0) return;
+    const checkpoint = this.checkpoints[cpIndex];
+
+    // Build a set of file paths in the checkpoint snapshot
+    const snapshotPaths = new Set(checkpoint.fileSnapshots.map(s => s.filePath));
+
+    // 1. Restore files from checkpoint snapshot
+    for (const snapshot of checkpoint.fileSnapshots) {
+      try {
+        if (snapshot.existed && snapshot.content !== null) {
+          await writeFile(snapshot.filePath, snapshot.content, "utf-8");
+        } else if (!snapshot.existed) {
+          // File should not exist at this checkpoint
+          if (existsSync(snapshot.filePath)) {
+            await unlink(snapshot.filePath);
+          }
+        }
+      } catch {
+        // Skip files we can't restore
+      }
+    }
+
+    // 2. Revert files touched AFTER this checkpoint (not in snapshot) to original state
+    for (const [filePath, original] of this.originalFileContents) {
+      if (snapshotPaths.has(filePath)) continue;
+      try {
+        if (original.existed) {
+          await writeFile(filePath, original.content, "utf-8");
+        } else {
+          if (existsSync(filePath)) {
+            await unlink(filePath);
+          }
+        }
+      } catch {
+        // Skip
+      }
+    }
+
+    // 3. Truncate agent history
+    if (this.agent) {
+      this.agent.truncateHistory(checkpoint.apiHistoryLength);
+      this.agent.setPromptTokens(checkpoint.promptTokens);
+    }
+
+    // 4. Truncate webview messages
+    this.webviewMessages = this.webviewMessages.slice(0, checkpoint.messageIndex);
+
+    // 5. Remove checkpoints after this one
+    this.checkpoints = this.checkpoints.slice(0, cpIndex + 1);
+
+    // 6. Clear file change tracking
+    this.sessionFileChanges.clear();
+    this.oldContentProvider.clearAll();
+
+    // 7. Rebuild originalFileContents from remaining checkpoint snapshots
+    // Keep only files that were tracked up to this checkpoint
+    const stillTrackedFiles = new Set<string>();
+    for (const cp of this.checkpoints) {
+      for (const s of cp.fileSnapshots) {
+        stillTrackedFiles.add(s.filePath);
+      }
+    }
+    for (const filePath of Array.from(this.originalFileContents.keys())) {
+      if (!stillTrackedFiles.has(filePath)) {
+        this.originalFileContents.delete(filePath);
+      }
+    }
+
+    // 8. Notify webview
+    this.postMessage({
+      type: "checkpointRestored",
+      messages: this.webviewMessages,
+      checkpoints: this.getCheckpointSummaries(),
+      promptTokens: checkpoint.promptTokens,
+      maxTokens: 200_000,
+    });
+
+    this.sendFileChangesList();
+
+    // 9. Save session
+    await this.autoSaveSession();
+  }
+
+  private getCheckpointSummaries(): CheckpointSummary[] {
+    return this.checkpoints.map(cp => ({
+      id: cp.id,
+      createdAt: cp.createdAt,
+      messageIndex: cp.messageIndex,
+      label: cp.label,
+    }));
+  }
+
+  private sendCheckpointsUpdate(): void {
+    this.postMessage({
+      type: "checkpointsUpdate",
+      checkpoints: this.getCheckpointSummaries(),
+    });
+  }
+
   private async handleWebviewMessage(msg: WebviewToExtension): Promise<void> {
     switch (msg.type) {
       case "ready": {
@@ -279,6 +432,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           await this.initializeClient();
         }
         if (this.agent) {
+          await this.createCheckpoint(msg.text);
           vscode.commands.executeCommand("setContext", "minimax.isStreaming", true);
           await this.agent.sendMessage(msg.text, msg.fileContext);
         }
@@ -335,6 +489,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.agent?.clearHistory();
         this.sessionFileChanges.clear();
         this.oldContentProvider.clearAll();
+        this.checkpoints = [];
+        this.originalFileContents.clear();
+        this.sendCheckpointsUpdate();
         break;
 
       case "compactContext":
@@ -375,6 +532,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case "rejectAllChanges":
         await this.rejectAllChanges();
         break;
+
+      case "restoreCheckpoint":
+        await this.restoreCheckpoint(msg.checkpointId);
+        break;
     }
   }
 
@@ -398,8 +559,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.webviewMessages = [];
     this.sessionFileChanges.clear();
     this.oldContentProvider.clearAll();
+    this.checkpoints = [];
+    this.originalFileContents.clear();
     this.agent?.clearHistory();
     this.postMessage({ type: "sessionLoaded", messages: [], promptTokens: 0, maxTokens: 200_000 });
+    this.sendCheckpointsUpdate();
   }
 
   private async handleLoadSession(sessionId: string): Promise<void> {
@@ -413,6 +577,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.webviewMessages = session.webviewMessages;
     this.sessionFileChanges.clear();
     this.oldContentProvider.clearAll();
+    this.checkpoints = [];
+    this.originalFileContents.clear();
 
     // Restore agent history
     if (this.agent) {
@@ -426,6 +592,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       promptTokens: session.promptTokens ?? 0,
       maxTokens: 200_000,
     });
+    this.sendCheckpointsUpdate();
   }
 
   private async autoSaveSession(): Promise<void> {
@@ -472,6 +639,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.agent?.clearHistory();
     this.sessionFileChanges.clear();
     this.oldContentProvider.clearAll();
+    this.checkpoints = [];
+    this.originalFileContents.clear();
   }
 
   private postMessage(msg: ExtensionToWebview): void {

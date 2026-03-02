@@ -1213,6 +1213,59 @@ body {
   background: rgba(247, 118, 142, 0.2);
 }
 
+/* Checkpoint divider */
+.checkpoint-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  margin: 8px 0;
+  color: var(--dim-text);
+  font-size: 11px;
+}
+
+.checkpoint-line {
+  flex: 1;
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg, var(--border) 0, var(--border) 4px, transparent 4px, transparent 8px
+  );
+}
+
+.checkpoint-label {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.checkpoint-restore-btn {
+  opacity: 0;
+  transition: opacity 0.15s;
+  background: none;
+  border: 1px solid var(--warning);
+  color: var(--warning);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.checkpoint-divider:hover .checkpoint-restore-btn {
+  opacity: 1;
+}
+
+.checkpoint-restore-btn:hover:not(:disabled) {
+  background: var(--warning);
+  color: var(--bg);
+}
+
+.checkpoint-restore-btn:disabled {
+  opacity: 0;
+  cursor: default;
+}
+
 /* Diff view */
 .diff-view {
   border: 1px solid var(--border);

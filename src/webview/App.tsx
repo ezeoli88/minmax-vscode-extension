@@ -1,6 +1,6 @@
 import { useReducer, useEffect, useRef, useCallback } from "react";
 import { ChatView } from "./components/ChatView";
-import type { AgentMode, ExtensionToWebview, SerializedToolCall, FileChangeData, FileChangeSummary, QuotaData, SessionSummaryData } from "../shared/protocol";
+import type { AgentMode, CheckpointSummary, ExtensionToWebview, SerializedToolCall, FileChangeData, FileChangeSummary, QuotaData, SessionSummaryData } from "../shared/protocol";
 
 const vscode = acquireVsCodeApi();
 
@@ -30,6 +30,7 @@ interface AppState {
   sessions: SessionSummaryData[];
   hasApiKey: boolean;
   fileChanges: FileChangeSummary[];
+  checkpoints: CheckpointSummary[];
 }
 
 type AppAction =
@@ -53,7 +54,9 @@ type AppAction =
   | { type: "COMPACT_START" }
   | { type: "COMPACT_RESULT"; success: boolean; promptTokens: number }
   | { type: "SEND_MESSAGE"; text: string }
-  | { type: "CLEAR_CHAT" };
+  | { type: "CLEAR_CHAT" }
+  | { type: "CHECKPOINTS_UPDATE"; checkpoints: CheckpointSummary[] }
+  | { type: "CHECKPOINT_RESTORED"; messages: ChatMessage[]; promptTokens: number; maxContextTokens: number; checkpoints: CheckpointSummary[] };
 
 const initialState: AppState = {
   messages: [],
@@ -70,6 +73,7 @@ const initialState: AppState = {
   sessions: [],
   hasApiKey: false,
   fileChanges: [],
+  checkpoints: [],
 };
 
 function reducer(state: AppState, action: AppAction): AppState {
@@ -203,7 +207,7 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, sessions: action.sessions };
 
     case "SESSION_LOADED":
-      return { ...state, messages: action.messages, totalTokens: 0, promptTokens: action.promptTokens ?? 0, maxContextTokens: action.maxContextTokens ?? 200_000, isLoading: false, fileChanges: [] };
+      return { ...state, messages: action.messages, totalTokens: 0, promptTokens: action.promptTokens ?? 0, maxContextTokens: action.maxContextTokens ?? 200_000, isLoading: false, fileChanges: [], checkpoints: [] };
 
     case "API_KEY_STATUS":
       return { ...state, hasApiKey: action.hasKey };
@@ -225,10 +229,24 @@ function reducer(state: AppState, action: AppAction): AppState {
       };
 
     case "CLEAR_CHAT":
-      return { ...state, messages: [], totalTokens: 0, promptTokens: 0, quota: state.quota, fileChanges: [] };
+      return { ...state, messages: [], totalTokens: 0, promptTokens: 0, quota: state.quota, fileChanges: [], checkpoints: [] };
 
     case "FILE_CHANGES_LIST":
       return { ...state, fileChanges: action.changes };
+
+    case "CHECKPOINTS_UPDATE":
+      return { ...state, checkpoints: action.checkpoints };
+
+    case "CHECKPOINT_RESTORED":
+      return {
+        ...state,
+        messages: action.messages,
+        promptTokens: action.promptTokens,
+        maxContextTokens: action.maxContextTokens,
+        checkpoints: action.checkpoints,
+        isLoading: false,
+        fileChanges: [],
+      };
 
     default:
       return state;
@@ -302,6 +320,12 @@ export function App() {
           break;
         case "compactResult":
           dispatch({ type: "COMPACT_RESULT", success: msg.success, promptTokens: msg.promptTokens });
+          break;
+        case "checkpointsUpdate":
+          dispatch({ type: "CHECKPOINTS_UPDATE", checkpoints: msg.checkpoints });
+          break;
+        case "checkpointRestored":
+          dispatch({ type: "CHECKPOINT_RESTORED", messages: msg.messages, promptTokens: msg.promptTokens, maxContextTokens: msg.maxTokens, checkpoints: msg.checkpoints });
           break;
       }
     };
@@ -391,6 +415,10 @@ export function App() {
     vscode.postMessage({ type: "compactContext" });
   }, []);
 
+  const handleRestoreCheckpoint = useCallback((checkpointId: string) => {
+    vscode.postMessage({ type: "restoreCheckpoint", checkpointId });
+  }, []);
+
   return (
     <div className="app" data-theme={state.theme}>
       <ChatView
@@ -426,6 +454,8 @@ export function App() {
         onRejectFileChange={handleRejectFileChange}
         onAcceptAllChanges={handleAcceptAllChanges}
         onRejectAllChanges={handleRejectAllChanges}
+        checkpoints={state.checkpoints}
+        onRestoreCheckpoint={handleRestoreCheckpoint}
       />
     </div>
   );
