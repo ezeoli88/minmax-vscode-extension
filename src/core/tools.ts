@@ -51,6 +51,37 @@ export function getReadOnlyToolDefinitions(): OpenAI.Chat.Completions.ChatComple
     .map((t) => t.definition);
 }
 
+const spawnExplorersDefinition: OpenAI.Chat.Completions.ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "spawn_explorers",
+    description: "Launch parallel exploratory sub-agents to research multiple aspects of the codebase simultaneously. Each explorer can use read-only tools (read_file, glob, grep, list_directory). Use this when you need to investigate multiple independent things at once — for example, searching for auth patterns AND analyzing test structure AND reading config files in parallel.",
+    parameters: {
+      type: "object" as const,
+      required: ["tasks"],
+      properties: {
+        tasks: {
+          type: "array" as const,
+          description: "List of exploration tasks to run in parallel (max 3)",
+          items: {
+            type: "object" as const,
+            required: ["id", "description", "instruction"],
+            properties: {
+              id: { type: "string" as const, description: "Unique task identifier" },
+              description: { type: "string" as const, description: "Short label (shown in UI)" },
+              instruction: { type: "string" as const, description: "Detailed instruction for the explorer" },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+export function getPlanToolDefinitions(): OpenAI.Chat.Completions.ChatCompletionTool[] {
+  return [...getReadOnlyToolDefinitions(), spawnExplorersDefinition];
+}
+
 export async function executeTool(
   name: string,
   args: Record<string, any>,

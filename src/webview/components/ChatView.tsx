@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ChatMessage } from "../App";
-import type { AgentMode, CheckpointSummary, FileChangeSummary, QuotaData, SessionSummaryData } from "../../shared/protocol";
+import type { AgentMode, CheckpointSummary, FileChangeSummary, QuotaData, SessionSummaryData, SubAgentTask } from "../../shared/protocol";
 import { ChatHeader } from "./ChatHeader";
 import { ContextBar } from "./ContextBar";
 import { MessageList } from "./MessageList";
@@ -43,6 +43,7 @@ interface ChatViewProps {
   onRejectAllChanges: () => void;
   checkpoints: CheckpointSummary[];
   onRestoreCheckpoint: (checkpointId: string) => void;
+  subAgentTasks?: SubAgentTask[];
 }
 
 export function ChatView({
@@ -80,6 +81,7 @@ export function ChatView({
   onRejectAllChanges,
   checkpoints,
   onRestoreCheckpoint,
+  subAgentTasks,
 }: ChatViewProps) {
   const [showChangesModal, setShowChangesModal] = useState(false);
 
@@ -114,6 +116,7 @@ export function ChatView({
         onViewChanges={handleOpenModal}
         checkpoints={checkpoints}
         onRestoreCheckpoint={onRestoreCheckpoint}
+        subAgentTasks={subAgentTasks}
       />
       <InputBox
         isLoading={isLoading}

@@ -1,6 +1,6 @@
 import { useReducer, useEffect, useRef, useCallback } from "react";
 import { ChatView } from "./components/ChatView";
-import type { AgentMode, CheckpointSummary, ExtensionToWebview, SerializedToolCall, FileChangeData, FileChangeSummary, QuotaData, SessionSummaryData } from "../shared/protocol";
+import type { AgentMode, CheckpointSummary, ExtensionToWebview, SerializedToolCall, FileChangeData, FileChangeSummary, QuotaData, SessionSummaryData, SubAgentTask } from "../shared/protocol";
 
 const vscode = acquireVsCodeApi();
 
@@ -31,6 +31,7 @@ interface AppState {
   hasApiKey: boolean;
   fileChanges: FileChangeSummary[];
   checkpoints: CheckpointSummary[];
+  subAgentTasks: SubAgentTask[];
 }
 
 type AppAction =
@@ -56,7 +57,11 @@ type AppAction =
   | { type: "SEND_MESSAGE"; text: string }
   | { type: "CLEAR_CHAT" }
   | { type: "CHECKPOINTS_UPDATE"; checkpoints: CheckpointSummary[] }
-  | { type: "CHECKPOINT_RESTORED"; messages: ChatMessage[]; promptTokens: number; maxContextTokens: number; checkpoints: CheckpointSummary[] };
+  | { type: "CHECKPOINT_RESTORED"; messages: ChatMessage[]; promptTokens: number; maxContextTokens: number; checkpoints: CheckpointSummary[] }
+  | { type: "SUB_AGENT_START"; taskId: string; description: string }
+  | { type: "SUB_AGENT_PROGRESS"; taskId: string; toolName: string }
+  | { type: "SUB_AGENT_DONE"; taskId: string; summary: string }
+  | { type: "SUB_AGENT_ERROR"; taskId: string; error: string };
 
 const initialState: AppState = {
   messages: [],
@@ -74,6 +79,7 @@ const initialState: AppState = {
   hasApiKey: false,
   fileChanges: [],
   checkpoints: [],
+  subAgentTasks: [],
 };
 
 function reducer(state: AppState, action: AppAction): AppState {
@@ -190,7 +196,7 @@ function reducer(state: AppState, action: AppAction): AppState {
       const cleaned = state.messages.filter(
         (m) => !(m.isStreaming && !m.content && !m.reasoning && !m.toolCalls)
       );
-      return { ...state, messages: cleaned, isLoading: false };
+      return { ...state, messages: cleaned, isLoading: false, subAgentTasks: [] };
 
     case "CONFIG_UPDATE":
       return {
@@ -229,7 +235,7 @@ function reducer(state: AppState, action: AppAction): AppState {
       };
 
     case "CLEAR_CHAT":
-      return { ...state, messages: [], totalTokens: 0, promptTokens: 0, quota: state.quota, fileChanges: [], checkpoints: [] };
+      return { ...state, messages: [], totalTokens: 0, promptTokens: 0, quota: state.quota, fileChanges: [], checkpoints: [], subAgentTasks: [] };
 
     case "FILE_CHANGES_LIST":
       return { ...state, fileChanges: action.changes };
@@ -246,6 +252,43 @@ function reducer(state: AppState, action: AppAction): AppState {
         checkpoints: action.checkpoints,
         isLoading: false,
         fileChanges: [],
+      };
+
+    case "SUB_AGENT_START":
+      return {
+        ...state,
+        subAgentTasks: [
+          ...state.subAgentTasks,
+          { taskId: action.taskId, description: action.description, status: "running" },
+        ],
+      };
+
+    case "SUB_AGENT_PROGRESS":
+      return {
+        ...state,
+        subAgentTasks: state.subAgentTasks.map((t) =>
+          t.taskId === action.taskId ? { ...t, currentTool: action.toolName } : t
+        ),
+      };
+
+    case "SUB_AGENT_DONE":
+      return {
+        ...state,
+        subAgentTasks: state.subAgentTasks.map((t) =>
+          t.taskId === action.taskId
+            ? { ...t, status: "completed" as const, summary: action.summary, currentTool: undefined }
+            : t
+        ),
+      };
+
+    case "SUB_AGENT_ERROR":
+      return {
+        ...state,
+        subAgentTasks: state.subAgentTasks.map((t) =>
+          t.taskId === action.taskId
+            ? { ...t, status: "error" as const, summary: action.error, currentTool: undefined }
+            : t
+        ),
       };
 
     default:
@@ -326,6 +369,18 @@ export function App() {
           break;
         case "checkpointRestored":
           dispatch({ type: "CHECKPOINT_RESTORED", messages: msg.messages, promptTokens: msg.promptTokens, maxContextTokens: msg.maxTokens, checkpoints: msg.checkpoints });
+          break;
+        case "subAgentStart":
+          dispatch({ type: "SUB_AGENT_START", taskId: msg.taskId, description: msg.description });
+          break;
+        case "subAgentProgress":
+          dispatch({ type: "SUB_AGENT_PROGRESS", taskId: msg.taskId, toolName: msg.toolName });
+          break;
+        case "subAgentDone":
+          dispatch({ type: "SUB_AGENT_DONE", taskId: msg.taskId, summary: msg.summary });
+          break;
+        case "subAgentError":
+          dispatch({ type: "SUB_AGENT_ERROR", taskId: msg.taskId, error: msg.error });
           break;
       }
     };
@@ -456,6 +511,7 @@ export function App() {
         onRejectAllChanges={handleRejectAllChanges}
         checkpoints={state.checkpoints}
         onRestoreCheckpoint={handleRestoreCheckpoint}
+        subAgentTasks={state.subAgentTasks}
       />
     </div>
   );

@@ -172,6 +172,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.autoSaveSession();
       this.sendFileChangesList();
     });
+
+    // Sub-agent events
+    this.agent.on("subagent:start", (taskId: string, description: string) => {
+      this.postMessage({ type: "subAgentStart", taskId, description });
+    });
+
+    this.agent.on("subagent:progress", (taskId: string, toolName: string) => {
+      this.postMessage({ type: "subAgentProgress", taskId, toolName });
+    });
+
+    this.agent.on("subagent:done", (taskId: string, summary: string) => {
+      this.postMessage({ type: "subAgentDone", taskId, summary });
+    });
+
+    this.agent.on("subagent:error", (taskId: string, error: string) => {
+      this.postMessage({ type: "subAgentError", taskId, error });
+    });
   }
 
   private trackFileChange(fileChange: FileChangeData): void {

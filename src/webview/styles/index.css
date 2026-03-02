@@ -1266,6 +1266,95 @@ body {
   cursor: default;
 }
 
+/* Sub-agent indicator */
+.subagent-indicator {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 4px 0;
+}
+
+.subagent-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.subagent-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subagent-task {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 0;
+}
+
+.subagent-task-icon {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.subagent-task-completed .subagent-task-icon {
+  color: var(--success);
+}
+
+.subagent-task-error .subagent-task-icon {
+  color: var(--error);
+}
+
+.subagent-task-running .subagent-task-icon {
+  color: var(--accent);
+}
+
+.subagent-task-desc {
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subagent-task-completed .subagent-task-desc {
+  color: var(--dim-text);
+}
+
+.subagent-task-tool {
+  font-size: 10px;
+  color: var(--warning);
+  font-family: "Fira Code", "Cascadia Code", monospace;
+  flex-shrink: 0;
+}
+
+.subagent-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: subagent-spin 0.6s linear infinite;
+}
+
+@keyframes subagent-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Diff view */
 .diff-view {
   border: 1px solid var(--border);

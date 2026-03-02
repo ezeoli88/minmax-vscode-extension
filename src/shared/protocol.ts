@@ -104,6 +104,16 @@ export interface QuotaData {
   resetMinutes: number;
 }
 
+// --- Sub-agent types ---
+
+export interface SubAgentTask {
+  taskId: string;
+  description: string;
+  status: "running" | "completed" | "error";
+  currentTool?: string;
+  summary?: string;
+}
+
 // --- Extension → Webview ---
 
 export type ExtensionToWebview =
@@ -126,4 +136,8 @@ export type ExtensionToWebview =
   | { type: "fileCompletions"; files: string[] }
   | { type: "fileChangesList"; changes: FileChangeSummary[] }
   | { type: "checkpointsUpdate"; checkpoints: CheckpointSummary[] }
-  | { type: "checkpointRestored"; messages: any[]; checkpoints: CheckpointSummary[]; promptTokens: number; maxTokens: number };
+  | { type: "checkpointRestored"; messages: any[]; checkpoints: CheckpointSummary[]; promptTokens: number; maxTokens: number }
+  | { type: "subAgentStart"; taskId: string; description: string }
+  | { type: "subAgentProgress"; taskId: string; toolName: string }
+  | { type: "subAgentDone"; taskId: string; summary: string }
+  | { type: "subAgentError"; taskId: string; error: string };

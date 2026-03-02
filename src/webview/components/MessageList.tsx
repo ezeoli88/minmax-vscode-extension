@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import type { ChatMessage } from "../App";
-import type { CheckpointSummary } from "../../shared/protocol";
+import type { CheckpointSummary, SubAgentTask } from "../../shared/protocol";
 import { Message } from "./Message";
 import { CheckpointDivider } from "./CheckpointDivider";
 
@@ -11,9 +11,10 @@ interface MessageListProps {
   onViewChanges?: () => void;
   checkpoints: CheckpointSummary[];
   onRestoreCheckpoint: (checkpointId: string) => void;
+  subAgentTasks?: SubAgentTask[];
 }
 
-export function MessageList({ messages, isLoading, showViewChangesButton, onViewChanges, checkpoints, onRestoreCheckpoint }: MessageListProps) {
+export function MessageList({ messages, isLoading, showViewChangesButton, onViewChanges, checkpoints, onRestoreCheckpoint, subAgentTasks }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const userScrolledUp = useRef(false);
@@ -58,7 +59,7 @@ export function MessageList({ messages, isLoading, showViewChangesButton, onView
                 onRestore={onRestoreCheckpoint}
               />
             )}
-            <Message message={msg} />
+            <Message message={msg} subAgentTasks={subAgentTasks} />
           </div>
         );
       })}
