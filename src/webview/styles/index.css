@@ -1238,8 +1238,8 @@ body {
 }
 
 .checkpoint-restore-btn {
-  opacity: 0;
-  transition: opacity 0.15s;
+  opacity: 0.6;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
   background: none;
   border: 1px solid var(--warning);
   color: var(--warning);
@@ -1262,8 +1262,60 @@ body {
 }
 
 .checkpoint-restore-btn:disabled {
-  opacity: 0;
+  opacity: 0.3;
   cursor: default;
+}
+
+.checkpoint-restore-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.checkpoint-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  z-index: 30;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.checkpoint-popover-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: var(--warning);
+  color: var(--bg);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.checkpoint-popover-action:hover {
+  opacity: 0.85;
+}
+
+.checkpoint-popover-icon {
+  font-size: 14px;
+}
+
+.checkpoint-popover-desc {
+  font-size: 11px;
+  color: var(--dim-text);
+  padding: 0 2px;
 }
 
 /* Sub-agent indicator */

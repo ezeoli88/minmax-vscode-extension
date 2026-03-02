@@ -270,6 +270,9 @@ Be concise. Show relevant code, skip obvious explanations.`;
         // Execute tool calls
         if (finalToolCalls.length > 0) {
           for (const tc of finalToolCalls) {
+            // Stop executing tool calls if abort was signalled
+            if (abort.signal.aborted) break;
+
             let args: Record<string, any> = {};
             try {
               args = JSON.parse(tc.function.arguments || "{}");
@@ -322,7 +325,7 @@ Be concise. Show relevant code, skip obvious explanations.`;
             });
           }
 
-          continueLoop = true;
+          continueLoop = !abort.signal.aborted;
         }
       }
     } catch (err: any) {
@@ -355,11 +358,11 @@ Be concise. Show relevant code, skip obvious explanations.`;
       this.emit("subagent:error", taskId, error);
     });
 
-    const results = await manager.runExplorers(tasks);
+    const results = await manager.runExplorers(tasks, signal);
 
     // Format results as a readable tool_result
     const sections = results.map((r) => {
-      const statusIcon = r.status === "completed" ? "[OK]" : r.status === "timeout" ? "[TIMEOUT]" : "[ERROR]";
+      const statusIcon = r.status === "completed" ? "[OK]" : r.status === "cancelled" ? "[CANCELLED]" : "[ERROR]";
       return `### ${statusIcon} ${r.description}\nTools used: ${r.toolsUsed.join(", ") || "none"}\n\n${r.summary}`;
     });
 

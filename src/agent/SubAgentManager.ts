@@ -5,7 +5,6 @@ import { streamChat } from "../core/api";
 import { getReadOnlyToolDefinitions, executeTool } from "../core/tools";
 
 const MAX_TURNS = 3;
-const TIMEOUT_MS = 30_000;
 const MAX_EXPLORERS = 3;
 
 export interface ExplorerTask {
@@ -19,7 +18,7 @@ export interface ExplorerResult {
   description: string;
   summary: string;
   toolsUsed: string[];
-  status: "completed" | "error" | "timeout";
+  status: "completed" | "error" | "cancelled";
 }
 
 /**
@@ -44,11 +43,11 @@ export class SubAgentManager extends EventEmitter {
     this.cwd = cwd;
   }
 
-  async runExplorers(tasks: ExplorerTask[]): Promise<ExplorerResult[]> {
+  async runExplorers(tasks: ExplorerTask[], parentSignal?: AbortSignal): Promise<ExplorerResult[]> {
     // Limit to MAX_EXPLORERS
     const limited = tasks.slice(0, MAX_EXPLORERS);
 
-    const promises = limited.map((task) => this.runSingleExplorer(task));
+    const promises = limited.map((task) => this.runSingleExplorer(task, parentSignal));
     const settled = await Promise.allSettled(promises);
 
     return settled.map((result, i) => {
@@ -66,14 +65,20 @@ export class SubAgentManager extends EventEmitter {
     });
   }
 
-  private async runSingleExplorer(task: ExplorerTask): Promise<ExplorerResult> {
+  private async runSingleExplorer(task: ExplorerTask, parentSignal?: AbortSignal): Promise<ExplorerResult> {
     this.emit("explorer:start", task.id, task.description);
 
     const toolsUsed: string[] = [];
     const abortController = new AbortController();
 
-    // Timeout
-    const timeout = setTimeout(() => abortController.abort(), TIMEOUT_MS);
+    // Forward parent abort signal so user cancel stops sub-agents immediately
+    if (parentSignal) {
+      if (parentSignal.aborted) {
+        abortController.abort();
+      } else {
+        parentSignal.addEventListener("abort", () => abortController.abort(), { once: true });
+      }
+    }
 
     try {
       const systemPrompt = `You are a code explorer sub-agent. Your ONLY job is to investigate a specific aspect of the codebase and produce a concise summary.
@@ -170,7 +175,7 @@ Rules:
         summary = "(Explorer finished without producing a summary)";
       }
 
-      const wasTimeout = abortController.signal.aborted;
+      const wasCancelled = abortController.signal.aborted;
       this.emit("explorer:done", task.id, summary);
 
       return {
@@ -178,7 +183,7 @@ Rules:
         description: task.description,
         summary,
         toolsUsed,
-        status: wasTimeout ? "timeout" : "completed",
+        status: wasCancelled ? "cancelled" : "completed",
       };
     } catch (err: any) {
       const errorMsg = err.message || String(err);
@@ -191,7 +196,7 @@ Rules:
         status: "error",
       };
     } finally {
-      clearTimeout(timeout);
+      // cleanup complete
     }
   }
 }

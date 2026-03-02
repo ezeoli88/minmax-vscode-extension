@@ -378,8 +378,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // 4. Truncate webview messages
     this.webviewMessages = this.webviewMessages.slice(0, checkpoint.messageIndex);
 
-    // 5. Remove checkpoints after this one
-    this.checkpoints = this.checkpoints.slice(0, cpIndex + 1);
+    // 5. Remove checkpoints after this one (and the restored one itself to avoid messageIndex collision)
+    this.checkpoints = this.checkpoints.slice(0, cpIndex);
 
     // 6. Clear file change tracking
     this.sessionFileChanges.clear();
