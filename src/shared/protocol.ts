@@ -9,6 +9,31 @@ export interface SerializedToolCall {
   type: "function";
 }
 
+// --- Checkpoint types ---
+
+export interface FileSnapshot {
+  filePath: string;
+  content: string | null; // null = file did not exist at checkpoint time
+  existed: boolean;
+}
+
+export interface CheckpointData {
+  id: string;
+  createdAt: number;
+  messageIndex: number;
+  apiHistoryLength: number;
+  fileSnapshots: FileSnapshot[];
+  promptTokens: number;
+  label: string;
+}
+
+export interface CheckpointSummary {
+  id: string;
+  createdAt: number;
+  messageIndex: number;
+  label: string;
+}
+
 // --- Webview → Extension ---
 
 export interface SessionSummaryData {
@@ -40,6 +65,7 @@ export type WebviewToExtension =
   | { type: "rejectFileChange"; filePath: string }
   | { type: "acceptAllChanges" }
   | { type: "rejectAllChanges" }
+  | { type: "restoreCheckpoint"; checkpointId: string }
   | { type: "ready" };
 
 // --- Diff types for inline file change visualization ---
@@ -78,6 +104,16 @@ export interface QuotaData {
   resetMinutes: number;
 }
 
+// --- Sub-agent types ---
+
+export interface SubAgentTask {
+  taskId: string;
+  description: string;
+  status: "running" | "completed" | "error";
+  currentTool?: string;
+  summary?: string;
+}
+
 // --- Extension → Webview ---
 
 export type ExtensionToWebview =
@@ -98,4 +134,10 @@ export type ExtensionToWebview =
   | { type: "sessionLoaded"; messages: any[]; promptTokens: number; maxTokens: number }
   | { type: "apiKeyStatus"; hasKey: boolean }
   | { type: "fileCompletions"; files: string[] }
-  | { type: "fileChangesList"; changes: FileChangeSummary[] };
+  | { type: "fileChangesList"; changes: FileChangeSummary[] }
+  | { type: "checkpointsUpdate"; checkpoints: CheckpointSummary[] }
+  | { type: "checkpointRestored"; messages: any[]; checkpoints: CheckpointSummary[]; promptTokens: number; maxTokens: number }
+  | { type: "subAgentStart"; taskId: string; description: string }
+  | { type: "subAgentProgress"; taskId: string; toolName: string }
+  | { type: "subAgentDone"; taskId: string; summary: string }
+  | { type: "subAgentError"; taskId: string; error: string };

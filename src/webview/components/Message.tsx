@@ -1,15 +1,18 @@
 import type { ChatMessage } from "../App";
+import type { SubAgentTask } from "../../shared/protocol";
 import { DiffView } from "./DiffView";
 import { Markdown } from "./Markdown";
 import { TerminalOutput } from "./TerminalOutput";
+import { SubAgentIndicator } from "./SubAgentIndicator";
 
 const TERMINAL_TOOLS = new Set(["bash", "bash_bg"]);
 
 interface MessageProps {
   message: ChatMessage;
+  subAgentTasks?: SubAgentTask[];
 }
 
-export function Message({ message }: MessageProps) {
+export function Message({ message, subAgentTasks }: MessageProps) {
   if (message.role === "user") {
     return (
       <div className="message message-user">
@@ -20,16 +23,22 @@ export function Message({ message }: MessageProps) {
   }
 
   if (message.role === "tool") {
+    const isSpawnExplorers = message.toolName === "spawn_explorers";
+
     return (
       <div className="message message-tool">
         <div className="message-label tool-label">
-          {message.toolName || "Tool"}
+          {isSpawnExplorers ? "Sub-Agents" : (message.toolName || "Tool")}
         </div>
         <div className="message-content tool-content">
-          {message.fileChange ? (
+          {isSpawnExplorers && subAgentTasks && subAgentTasks.length > 0 ? (
+            <SubAgentIndicator tasks={subAgentTasks} />
+          ) : message.fileChange ? (
             <DiffView data={message.fileChange} />
           ) : TERMINAL_TOOLS.has(message.toolName || "") && message.content !== "Running..." ? (
             <TerminalOutput content={message.content || ""} />
+          ) : isSpawnExplorers && message.content !== "Running..." ? (
+            <Markdown content={message.content || ""} />
           ) : (
             <pre>{message.content}</pre>
           )}

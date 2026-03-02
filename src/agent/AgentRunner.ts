@@ -2,7 +2,9 @@ import { EventEmitter } from "events";
 import type OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { streamChat, type AccumulatedToolCall } from "../core/api";
-import { getToolDefinitions, getReadOnlyToolDefinitions, executeTool, READ_ONLY_TOOL_NAMES } from "../core/tools";
+import { getToolDefinitions, getReadOnlyToolDefinitions, getPlanToolDefinitions, executeTool, READ_ONLY_TOOL_NAMES } from "../core/tools";
+import { SubAgentManager } from "./SubAgentManager";
+import type { ExplorerTask } from "./SubAgentManager";
 import { killActiveProcess } from "../tools/bash";
 import { parseModelOutput, coerceArg, type ParsedToolCall } from "../core/parser";
 import { existsSync, readFileSync } from "fs";
@@ -57,6 +59,14 @@ export class AgentRunner extends EventEmitter {
     }
   }
 
+  truncateHistory(length: number) {
+    this.history = this.history.slice(0, length);
+  }
+
+  setPromptTokens(tokens: number) {
+    this.promptTokens = tokens;
+  }
+
   getHistory(): ChatCompletionMessageParam[] {
     return this.history;
   }
@@ -76,8 +86,14 @@ export class AgentRunner extends EventEmitter {
       systemPrompt = `You are a coding assistant in VS Code (READ-ONLY mode).
 Working directory: ${this.cwd}
 
-Available tools: read_file, glob, grep, list_directory (read-only).
+Available tools: read_file, glob, grep, list_directory (read-only), and spawn_explorers (parallel research).
 You CANNOT write, edit, or run commands. Do NOT attempt to call tools like edit_file, write_file, or bash.
+
+PARALLEL EXPLORATION:
+- Use spawn_explorers when you need to investigate multiple independent aspects of the codebase at once
+- Each explorer runs in parallel with read-only tools and returns a summary
+- Example: researching auth patterns + analyzing test structure + reading config files simultaneously
+- Max 3 explorers at a time, each with a short description and detailed instruction
 
 IMPORTANT: When the user asks you to implement, modify, create, or delete anything, you MUST:
 1. Explain what changes would be needed
@@ -151,7 +167,7 @@ Be concise. Show relevant code, skip obvious explanations.`;
 
         const tools = this.mode === "BUILDER"
           ? getToolDefinitions()
-          : getReadOnlyToolDefinitions();
+          : getPlanToolDefinitions();
 
         const fullHistory = this.buildMessages();
 
@@ -254,6 +270,9 @@ Be concise. Show relevant code, skip obvious explanations.`;
         // Execute tool calls
         if (finalToolCalls.length > 0) {
           for (const tc of finalToolCalls) {
+            // Stop executing tool calls if abort was signalled
+            if (abort.signal.aborted) break;
+
             let args: Record<string, any> = {};
             try {
               args = JSON.parse(tc.function.arguments || "{}");
@@ -280,7 +299,9 @@ Be concise. Show relevant code, skip obvious explanations.`;
 
             let toolResult: string;
             try {
-              if (this.mode === "PLAN" && !READ_ONLY_TOOL_NAMES.has(toolName)) {
+              if (toolName === "spawn_explorers") {
+                toolResult = await this.handleSpawnExplorers(args, abort.signal);
+              } else if (this.mode === "PLAN" && !READ_ONLY_TOOL_NAMES.has(toolName)) {
                 toolResult = `Error: Tool "${toolName}" is not available in PLAN mode. You MUST tell the user to switch to BUILDER mode (by pressing Tab or clicking the mode toggle) to apply these changes.`;
               } else {
                 toolResult = await executeTool(toolName, args, abort.signal);
@@ -304,7 +325,7 @@ Be concise. Show relevant code, skip obvious explanations.`;
             });
           }
 
-          continueLoop = true;
+          continueLoop = !abort.signal.aborted;
         }
       }
     } catch (err: any) {
@@ -313,6 +334,39 @@ Be concise. Show relevant code, skip obvious explanations.`;
       this.abortController = null;
       this.emit("done");
     }
+  }
+
+  private async handleSpawnExplorers(args: Record<string, any>, signal?: AbortSignal): Promise<string> {
+    const tasks: ExplorerTask[] = args.tasks || [];
+    if (tasks.length === 0) {
+      return "Error: No tasks provided to spawn_explorers.";
+    }
+
+    const manager = new SubAgentManager(this.client, this.model, this.cwd);
+
+    // Forward sub-agent events through this AgentRunner
+    manager.on("explorer:start", (taskId: string, description: string) => {
+      this.emit("subagent:start", taskId, description);
+    });
+    manager.on("explorer:tool", (taskId: string, toolName: string) => {
+      this.emit("subagent:progress", taskId, toolName);
+    });
+    manager.on("explorer:done", (taskId: string, summary: string) => {
+      this.emit("subagent:done", taskId, summary);
+    });
+    manager.on("explorer:error", (taskId: string, error: string) => {
+      this.emit("subagent:error", taskId, error);
+    });
+
+    const results = await manager.runExplorers(tasks, signal);
+
+    // Format results as a readable tool_result
+    const sections = results.map((r) => {
+      const statusIcon = r.status === "completed" ? "[OK]" : r.status === "cancelled" ? "[CANCELLED]" : "[ERROR]";
+      return `### ${statusIcon} ${r.description}\nTools used: ${r.toolsUsed.join(", ") || "none"}\n\n${r.summary}`;
+    });
+
+    return `## Explorer Results\n\n${sections.join("\n\n---\n\n")}`;
   }
 
   async compactContext(): Promise<{ success: boolean; promptTokens: number }> {

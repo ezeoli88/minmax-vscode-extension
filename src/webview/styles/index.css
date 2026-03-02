@@ -1213,6 +1213,200 @@ body {
   background: rgba(247, 118, 142, 0.2);
 }
 
+/* Checkpoint divider */
+.checkpoint-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  margin: 8px 0;
+  color: var(--dim-text);
+  font-size: 11px;
+}
+
+.checkpoint-line {
+  flex: 1;
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg, var(--border) 0, var(--border) 4px, transparent 4px, transparent 8px
+  );
+}
+
+.checkpoint-label {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.checkpoint-restore-btn {
+  opacity: 0.6;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  background: none;
+  border: 1px solid var(--warning);
+  color: var(--warning);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.checkpoint-divider:hover .checkpoint-restore-btn {
+  opacity: 1;
+}
+
+.checkpoint-restore-btn:hover:not(:disabled) {
+  background: var(--warning);
+  color: var(--bg);
+}
+
+.checkpoint-restore-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.checkpoint-restore-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.checkpoint-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  z-index: 30;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.checkpoint-popover-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: var(--warning);
+  color: var(--bg);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.checkpoint-popover-action:hover {
+  opacity: 0.85;
+}
+
+.checkpoint-popover-icon {
+  font-size: 14px;
+}
+
+.checkpoint-popover-desc {
+  font-size: 11px;
+  color: var(--dim-text);
+  padding: 0 2px;
+}
+
+/* Sub-agent indicator */
+.subagent-indicator {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 4px 0;
+}
+
+.subagent-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.subagent-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subagent-task {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 0;
+}
+
+.subagent-task-icon {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.subagent-task-completed .subagent-task-icon {
+  color: var(--success);
+}
+
+.subagent-task-error .subagent-task-icon {
+  color: var(--error);
+}
+
+.subagent-task-running .subagent-task-icon {
+  color: var(--accent);
+}
+
+.subagent-task-desc {
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subagent-task-completed .subagent-task-desc {
+  color: var(--dim-text);
+}
+
+.subagent-task-tool {
+  font-size: 10px;
+  color: var(--warning);
+  font-family: "Fira Code", "Cascadia Code", monospace;
+  flex-shrink: 0;
+}
+
+.subagent-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: subagent-spin 0.6s linear infinite;
+}
+
+@keyframes subagent-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Diff view */
 .diff-view {
   border: 1px solid var(--border);

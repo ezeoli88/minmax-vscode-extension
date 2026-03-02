@@ -1,15 +1,20 @@
 import { useRef, useEffect } from "react";
 import type { ChatMessage } from "../App";
+import type { CheckpointSummary, SubAgentTask } from "../../shared/protocol";
 import { Message } from "./Message";
+import { CheckpointDivider } from "./CheckpointDivider";
 
 interface MessageListProps {
   messages: ChatMessage[];
   isLoading: boolean;
   showViewChangesButton?: boolean;
   onViewChanges?: () => void;
+  checkpoints: CheckpointSummary[];
+  onRestoreCheckpoint: (checkpointId: string) => void;
+  subAgentTasks?: SubAgentTask[];
 }
 
-export function MessageList({ messages, isLoading, showViewChangesButton, onViewChanges }: MessageListProps) {
+export function MessageList({ messages, isLoading, showViewChangesButton, onViewChanges, checkpoints, onRestoreCheckpoint, subAgentTasks }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const userScrolledUp = useRef(false);
@@ -41,9 +46,23 @@ export function MessageList({ messages, isLoading, showViewChangesButton, onView
           <div className="empty-state-text">Start a conversation with MiniMax</div>
         </div>
       )}
-      {messages.map((msg, i) => (
-        <Message key={i} message={msg} />
-      ))}
+      {messages.map((msg, i) => {
+        const cp = checkpoints.find(c => c.messageIndex === i);
+        const cpIndex = cp ? checkpoints.indexOf(cp) + 1 : 0;
+        return (
+          <div key={i}>
+            {cp && (
+              <CheckpointDivider
+                checkpoint={cp}
+                index={cpIndex}
+                isLoading={isLoading}
+                onRestore={onRestoreCheckpoint}
+              />
+            )}
+            <Message message={msg} subAgentTasks={subAgentTasks} />
+          </div>
+        );
+      })}
       {isLoading && messages[messages.length - 1]?.isStreaming && (
         <div className="thinking-indicator">
           <span className="dot" />
