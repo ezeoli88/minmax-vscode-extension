@@ -71,6 +71,13 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand("minimax.resetWhatsNew", () => {
+      context.globalState.update("minimax.lastSeenWhatsNewVersion", undefined);
+      vscode.window.showInformationMessage("MiniMax: What's New reset. Reload to see it again.");
+    })
+  );
+
   // Status bar
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBarItem.text = "$(comment-discussion) MiniMax";

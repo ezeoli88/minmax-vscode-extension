@@ -86,6 +86,8 @@ Click the MiniMax icon in the activity bar (left sidebar), or press `Ctrl+Shift+
 
 | Model | Speed |
 |-------|-------|
+| MiniMax-M2.7 | ~60 tokens/s |
+| MiniMax-M2.7-highspeed | ~100 tokens/s |
 | MiniMax-M2.5 | ~60 tokens/s |
 | MiniMax-M2.5-highspeed | ~100 tokens/s |
 | MiniMax-M2.1 | ~60 tokens/s |

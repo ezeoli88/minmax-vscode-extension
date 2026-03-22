@@ -6,6 +6,7 @@ import { ContextBar } from "./ContextBar";
 import { MessageList } from "./MessageList";
 import { InputBox } from "./InputBox";
 import { ChangesModal } from "./ChangesModal";
+import { WhatsNewModal } from "./WhatsNewModal";
 import { StatusBar } from "./StatusBar";
 
 interface ChatViewProps {
@@ -44,6 +45,9 @@ interface ChatViewProps {
   checkpoints: CheckpointSummary[];
   onRestoreCheckpoint: (checkpointId: string) => void;
   subAgentTasks?: SubAgentTask[];
+  showWhatsNew: boolean;
+  whatsNewVersion: string;
+  onDismissWhatsNew: () => void;
 }
 
 export function ChatView({
@@ -82,6 +86,9 @@ export function ChatView({
   checkpoints,
   onRestoreCheckpoint,
   subAgentTasks,
+  showWhatsNew,
+  whatsNewVersion,
+  onDismissWhatsNew,
 }: ChatViewProps) {
   const [showChangesModal, setShowChangesModal] = useState(false);
 
@@ -136,6 +143,9 @@ export function ChatView({
         onModelChange={onModelChange}
         onClear={onClear}
       />
+      {showWhatsNew && (
+        <WhatsNewModal version={whatsNewVersion} onDismiss={onDismissWhatsNew} />
+      )}
       {showChangesModal && fileChanges.length > 0 && (
         <ChangesModal
           fileChanges={fileChanges}

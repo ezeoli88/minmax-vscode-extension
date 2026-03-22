@@ -1407,6 +1407,97 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* What's New modal */
+.whats-new-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.whats-new-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.whats-new-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.whats-new-body {
+  padding: 12px 16px;
+}
+
+.whats-new-highlight {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.whats-new-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.whats-new-list li {
+  font-size: 12px;
+  color: var(--text);
+  padding-left: 12px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.whats-new-list li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.whats-new-list li strong {
+  color: var(--text);
+}
+
+.whats-new-note {
+  font-size: 11px;
+  color: var(--dim-text);
+  line-height: 1.4;
+}
+
+.whats-new-footer {
+  padding: 10px 16px 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.whats-new-continue-btn {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 6px;
+  padding: 7px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.whats-new-continue-btn:hover {
+  opacity: 0.85;
+}
+
 /* Diff view */
 .diff-view {
   border: 1px solid var(--border);

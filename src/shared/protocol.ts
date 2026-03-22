@@ -66,6 +66,7 @@ export type WebviewToExtension =
   | { type: "acceptAllChanges" }
   | { type: "rejectAllChanges" }
   | { type: "restoreCheckpoint"; checkpointId: string }
+  | { type: "dismissWhatsNew" }
   | { type: "ready" };
 
 // --- Diff types for inline file change visualization ---
@@ -140,4 +141,5 @@ export type ExtensionToWebview =
   | { type: "subAgentStart"; taskId: string; description: string }
   | { type: "subAgentProgress"; taskId: string; toolName: string }
   | { type: "subAgentDone"; taskId: string; summary: string }
-  | { type: "subAgentError"; taskId: string; error: string };
+  | { type: "subAgentError"; taskId: string; error: string }
+  | { type: "showWhatsNew"; version: string };

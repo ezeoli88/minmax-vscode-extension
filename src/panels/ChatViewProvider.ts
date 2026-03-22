@@ -35,10 +35,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private sessionFileChanges = new Map<string, FileChangeData>();
   private checkpoints: CheckpointData[] = [];
   private originalFileContents = new Map<string, { content: string; existed: boolean }>();
+  private globalState: vscode.Memento;
 
   constructor(extensionUri: vscode.Uri, secrets: vscode.SecretStorage, globalState: vscode.Memento) {
     this.extensionUri = extensionUri;
     this.secrets = secrets;
+    this.globalState = globalState;
     this.sessionManager = new SessionManager(globalState);
     this.currentSessionId = this.sessionManager.generateId();
     const config = loadConfig();
@@ -441,6 +443,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         });
         const hasKey = !!(await getApiKey(this.secrets));
         this.postMessage({ type: "apiKeyStatus", hasKey });
+        this.checkWhatsNew();
         break;
       }
 
@@ -553,6 +556,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case "restoreCheckpoint":
         await this.restoreCheckpoint(msg.checkpointId);
         break;
+
+      case "dismissWhatsNew":
+        this.globalState.update("minimax.lastSeenWhatsNewVersion", this.getExtensionVersion());
+        break;
+    }
+  }
+
+  private getExtensionVersion(): string {
+    const ext = vscode.extensions.getExtension("ezeoli88.minmax-vscode");
+    return ext?.packageJSON?.version ?? "0.0.0";
+  }
+
+  private checkWhatsNew(): void {
+    const currentVersion = this.getExtensionVersion();
+    const lastSeen = this.globalState.get<string>("minimax.lastSeenWhatsNewVersion");
+    if (lastSeen !== currentVersion) {
+      this.postMessage({ type: "showWhatsNew", version: currentVersion });
     }
   }
 

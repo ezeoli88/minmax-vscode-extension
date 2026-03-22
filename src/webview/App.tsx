@@ -32,6 +32,8 @@ interface AppState {
   fileChanges: FileChangeSummary[];
   checkpoints: CheckpointSummary[];
   subAgentTasks: SubAgentTask[];
+  showWhatsNew: boolean;
+  whatsNewVersion: string;
 }
 
 type AppAction =
@@ -61,7 +63,9 @@ type AppAction =
   | { type: "SUB_AGENT_START"; taskId: string; description: string }
   | { type: "SUB_AGENT_PROGRESS"; taskId: string; toolName: string }
   | { type: "SUB_AGENT_DONE"; taskId: string; summary: string }
-  | { type: "SUB_AGENT_ERROR"; taskId: string; error: string };
+  | { type: "SUB_AGENT_ERROR"; taskId: string; error: string }
+  | { type: "SHOW_WHATS_NEW"; version: string }
+  | { type: "DISMISS_WHATS_NEW" };
 
 const initialState: AppState = {
   messages: [],
@@ -80,6 +84,8 @@ const initialState: AppState = {
   fileChanges: [],
   checkpoints: [],
   subAgentTasks: [],
+  showWhatsNew: false,
+  whatsNewVersion: "",
 };
 
 function reducer(state: AppState, action: AppAction): AppState {
@@ -291,6 +297,12 @@ function reducer(state: AppState, action: AppAction): AppState {
         ),
       };
 
+    case "SHOW_WHATS_NEW":
+      return { ...state, showWhatsNew: true, whatsNewVersion: action.version };
+
+    case "DISMISS_WHATS_NEW":
+      return { ...state, showWhatsNew: false };
+
     default:
       return state;
   }
@@ -381,6 +393,9 @@ export function App() {
           break;
         case "subAgentError":
           dispatch({ type: "SUB_AGENT_ERROR", taskId: msg.taskId, error: msg.error });
+          break;
+        case "showWhatsNew":
+          dispatch({ type: "SHOW_WHATS_NEW", version: msg.version });
           break;
       }
     };
@@ -474,6 +489,11 @@ export function App() {
     vscode.postMessage({ type: "restoreCheckpoint", checkpointId });
   }, []);
 
+  const handleDismissWhatsNew = useCallback(() => {
+    dispatch({ type: "DISMISS_WHATS_NEW" });
+    vscode.postMessage({ type: "dismissWhatsNew" });
+  }, []);
+
   return (
     <div className="app" data-theme={state.theme}>
       <ChatView
@@ -512,6 +532,9 @@ export function App() {
         checkpoints={state.checkpoints}
         onRestoreCheckpoint={handleRestoreCheckpoint}
         subAgentTasks={state.subAgentTasks}
+        showWhatsNew={state.showWhatsNew}
+        whatsNewVersion={state.whatsNewVersion}
+        onDismissWhatsNew={handleDismissWhatsNew}
       />
     </div>
   );
