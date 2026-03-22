@@ -11,7 +11,7 @@ export interface MiniMaxConfig {
 export function loadConfig(): MiniMaxConfig {
   const config = vscode.workspace.getConfiguration("minimax");
   return {
-    model: config.get<string>("model", "MiniMax-M2.5"),
+    model: config.get<string>("model", "MiniMax-M2.7"),
     theme: config.get<string>("theme", "tokyo-night"),
     defaultMode: config.get<AgentMode>("defaultMode", "BUILDER"),
     mcpServers: config.get<MiniMaxConfig["mcpServers"]>("mcpServers", {}),

@@ -77,8 +77,10 @@
       "properties": {
         "minimax.model": {
           "type": "string",
-          "default": "MiniMax-M2.5",
+          "default": "MiniMax-M2.7",
           "enum": [
+            "MiniMax-M2.7",
+            "MiniMax-M2.7-highspeed",
             "MiniMax-M2.5",
             "MiniMax-M2.5-highspeed",
             "MiniMax-M2.1",

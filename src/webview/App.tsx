@@ -66,7 +66,7 @@ type AppAction =
 const initialState: AppState = {
   messages: [],
   isLoading: false,
-  model: "MiniMax-M2.5",
+  model: "MiniMax-M2.7",
   theme: "tokyo-night",
   mode: "BUILDER",
   totalTokens: 0,

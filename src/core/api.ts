@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 export const AVAILABLE_MODELS = [
+  { id: "MiniMax-M2.7", label: "MiniMax-M2.7", description: "Latest, ~60 tps" },
+  { id: "MiniMax-M2.7-highspeed", label: "MiniMax-M2.7-highspeed", description: "Latest fast, ~100 tps" },
   { id: "MiniMax-M2.5", label: "MiniMax-M2.5", description: "Latest, ~60 tps" },
   { id: "MiniMax-M2.5-highspeed", label: "MiniMax-M2.5-highspeed", description: "Latest fast, ~100 tps" },
   { id: "MiniMax-M2.1", label: "MiniMax-M2.1", description: "Previous gen, ~60 tps" },
