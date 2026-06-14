@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import type { AgentMode } from "../shared/protocol";
+import { DEFAULT_MODEL } from "../shared/models";
 
 export interface MiniMaxConfig {
   model: string;
@@ -11,7 +12,7 @@ export interface MiniMaxConfig {
 export function loadConfig(): MiniMaxConfig {
   const config = vscode.workspace.getConfiguration("minimax");
   return {
-    model: config.get<string>("model", "MiniMax-M2.7"),
+    model: config.get<string>("model", DEFAULT_MODEL),
     theme: config.get<string>("theme", "tokyo-night"),
     defaultMode: config.get<AgentMode>("defaultMode", "BUILDER"),
     mcpServers: config.get<MiniMaxConfig["mcpServers"]>("mcpServers", {}),

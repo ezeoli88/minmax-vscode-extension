@@ -145,8 +145,8 @@ export async function execute(args: {
     });
 
     proc.unref();
-    proc.stdout?.unref?.();
-    proc.stderr?.unref?.();
+    (proc.stdout as typeof proc.stdout & { unref?: () => void })?.unref?.();
+    (proc.stderr as typeof proc.stderr & { unref?: () => void })?.unref?.();
 
     // Capture initial output for 3 seconds
     setTimeout(async () => {

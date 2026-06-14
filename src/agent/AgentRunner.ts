@@ -12,8 +12,7 @@ import { readFile } from "fs/promises";
 import { join, extname, isAbsolute, resolve } from "path";
 import { structuredPatch } from "diff";
 import type { AgentMode, SerializedToolCall, DiffLine, FileChangeData } from "../shared/protocol";
-
-export const MAX_CONTEXT_TOKENS = 200_000;
+import { getModelContextWindow } from "../shared/models";
 
 export class AgentRunner extends EventEmitter {
   private client: OpenAI;
@@ -39,6 +38,7 @@ export class AgentRunner extends EventEmitter {
 
   setModel(model: string) {
     this.model = model;
+    this.emit("context:update", this.promptTokens, this.getMaxContextTokens());
   }
 
   cancel() {
@@ -77,6 +77,10 @@ export class AgentRunner extends EventEmitter {
 
   getPromptTokens(): number {
     return this.promptTokens;
+  }
+
+  private getMaxContextTokens(): number {
+    return getModelContextWindow(this.model);
   }
 
   private getSystemPrompt(): string {
@@ -203,7 +207,7 @@ Be concise. Show relevant code, skip obvious explanations.`;
         this.emit("tokens:update", this.totalTokens);
 
         this.promptTokens = result.usage?.prompt_tokens || 0;
-        this.emit("context:update", this.promptTokens, MAX_CONTEXT_TOKENS);
+        this.emit("context:update", this.promptTokens, this.getMaxContextTokens());
 
         // Final parse
         const parsed = parseModelOutput(rawBuffer);
@@ -422,7 +426,7 @@ Format as a structured summary that allows the assistant to continue the convers
         ? Math.round(result.usage.prompt_tokens * 0.15)
         : Math.round(this.promptTokens * 0.2);
 
-      this.emit("context:update", this.promptTokens, MAX_CONTEXT_TOKENS);
+      this.emit("context:update", this.promptTokens, this.getMaxContextTokens());
       return { success: true, promptTokens: this.promptTokens };
     } catch (err: any) {
       this.emit("error", `Context compression failed: ${err.message}`);

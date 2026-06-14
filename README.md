@@ -84,14 +84,15 @@ Click the MiniMax icon in the activity bar (left sidebar), or press `Ctrl+Shift+
 
 ## Models
 
-| Model | Speed |
-|-------|-------|
-| MiniMax-M2.7 | ~60 tokens/s |
-| MiniMax-M2.7-highspeed | ~100 tokens/s |
-| MiniMax-M2.5 | ~60 tokens/s |
-| MiniMax-M2.5-highspeed | ~100 tokens/s |
-| MiniMax-M2.1 | ~60 tokens/s |
-| MiniMax-M2.1-highspeed | ~100 tokens/s |
+| Model | Context | Notes |
+|-------|---------|-------|
+| MiniMax-M3 | 1,000,000 tokens | Latest M-series model for coding and agent workflows |
+| MiniMax-M2.7 | 204,800 tokens | ~60 tokens/s |
+| MiniMax-M2.7-highspeed | 204,800 tokens | ~100 tokens/s |
+| MiniMax-M2.5 | 204,800 tokens | ~60 tokens/s |
+| MiniMax-M2.5-highspeed | 204,800 tokens | ~100 tokens/s |
+| MiniMax-M2.1 | 204,800 tokens | ~60 tokens/s |
+| MiniMax-M2.1-highspeed | 204,800 tokens | ~100 tokens/s |
 
 Switch models from the dropdown in the status bar.
 
@@ -115,7 +116,7 @@ Configure via VS Code settings (`Ctrl+,`) under the **MiniMax** section:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `minimax.model` | `MiniMax-M2.5` | Model to use |
+| `minimax.model` | `MiniMax-M3` | Model to use |
 | `minimax.theme` | `tokyo-night` | Chat theme (`tokyo-night`, `rose-pine`, `gruvbox`) |
 | `minimax.defaultMode` | `BUILDER` | Starting mode (`BUILDER` or `PLAN`) |
 | `minimax.mcpServers` | `{}` | MCP server configurations |

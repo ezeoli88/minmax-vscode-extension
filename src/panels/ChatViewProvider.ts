@@ -13,6 +13,7 @@ import { setCwd } from "../tools/cwd";
 import { setOpenBrowserHandler } from "../tools/vscode-bridge";
 import { processManager } from "../core/process-manager";
 import { OldContentProvider } from "./OldContentProvider";
+import { getModelContextWindow } from "../shared/models";
 
 export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "minimaxChat";
@@ -407,7 +408,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       messages: this.webviewMessages,
       checkpoints: this.getCheckpointSummaries(),
       promptTokens: checkpoint.promptTokens,
-      maxTokens: 200_000,
+      maxTokens: getModelContextWindow(this.model),
     });
 
     this.sendFileChangesList();
@@ -599,7 +600,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.checkpoints = [];
     this.originalFileContents.clear();
     this.agent?.clearHistory();
-    this.postMessage({ type: "sessionLoaded", messages: [], promptTokens: 0, maxTokens: 200_000 });
+    this.postMessage({
+      type: "sessionLoaded",
+      messages: [],
+      promptTokens: 0,
+      maxTokens: getModelContextWindow(this.model),
+    });
     this.sendCheckpointsUpdate();
   }
 
@@ -627,7 +633,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       type: "sessionLoaded",
       messages: session.webviewMessages,
       promptTokens: session.promptTokens ?? 0,
-      maxTokens: 200_000,
+      maxTokens: getModelContextWindow(this.model),
     });
     this.sendCheckpointsUpdate();
   }

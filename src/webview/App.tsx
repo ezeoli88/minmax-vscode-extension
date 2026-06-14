@@ -1,6 +1,7 @@
 import { useReducer, useEffect, useRef, useCallback } from "react";
 import { ChatView } from "./components/ChatView";
 import type { AgentMode, CheckpointSummary, ExtensionToWebview, SerializedToolCall, FileChangeData, FileChangeSummary, QuotaData, SessionSummaryData, SubAgentTask } from "../shared/protocol";
+import { DEFAULT_MODEL, getModelContextWindow } from "../shared/models";
 
 const vscode = acquireVsCodeApi();
 
@@ -70,12 +71,12 @@ type AppAction =
 const initialState: AppState = {
   messages: [],
   isLoading: false,
-  model: "MiniMax-M2.7",
+  model: DEFAULT_MODEL,
   theme: "tokyo-night",
   mode: "BUILDER",
   totalTokens: 0,
   promptTokens: 0,
-  maxContextTokens: 200_000,
+  maxContextTokens: getModelContextWindow(DEFAULT_MODEL),
   isCompacting: false,
   quota: null,
   fileCompletions: [],
@@ -210,6 +211,7 @@ function reducer(state: AppState, action: AppAction): AppState {
         model: action.model,
         theme: action.theme,
         mode: action.mode,
+        maxContextTokens: getModelContextWindow(action.model),
       };
 
     case "FILE_COMPLETIONS":
@@ -219,7 +221,7 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, sessions: action.sessions };
 
     case "SESSION_LOADED":
-      return { ...state, messages: action.messages, totalTokens: 0, promptTokens: action.promptTokens ?? 0, maxContextTokens: action.maxContextTokens ?? 200_000, isLoading: false, fileChanges: [], checkpoints: [] };
+      return { ...state, messages: action.messages, totalTokens: 0, promptTokens: action.promptTokens ?? 0, maxContextTokens: action.maxContextTokens ?? getModelContextWindow(state.model), isLoading: false, fileChanges: [], checkpoints: [] };
 
     case "API_KEY_STATUS":
       return { ...state, hasApiKey: action.hasKey };

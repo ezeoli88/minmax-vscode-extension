@@ -14,7 +14,7 @@ import { callMCPTool, getMCPToolDefinitions } from "./mcp";
 
 interface ToolModule {
   definition: OpenAI.Chat.Completions.ChatCompletionTool;
-  execute: (args: any) => Promise<any>;
+  execute: (args: any, signal?: AbortSignal) => Promise<any>;
 }
 
 const builtinTools: ToolModule[] = [
@@ -31,7 +31,7 @@ const builtinTools: ToolModule[] = [
   listServersTool,
 ];
 
-const TOOL_REGISTRY = new Map<string, (args: any) => Promise<any>>();
+const TOOL_REGISTRY = new Map<string, (args: any, signal?: AbortSignal) => Promise<any>>();
 
 for (const tool of builtinTools) {
   TOOL_REGISTRY.set(tool.definition.function.name, tool.execute);

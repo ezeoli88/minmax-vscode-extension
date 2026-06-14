@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.8] - 2026-06-14
+
+### Added
+
+- Support for MiniMax M3 as the default model.
+- Model-aware context limits, including MiniMax M3's 1M-token context window.
+
 ## [0.1.0] - 2026-02-21
 
 ### Added

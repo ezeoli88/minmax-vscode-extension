@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { AgentMode, QuotaData } from "../../shared/protocol";
+import { MODEL_IDS } from "../../shared/models";
 
 function formatReset(minutes: number): string {
   if (minutes <= 0) return "now";
@@ -15,15 +16,6 @@ function getQuotaClass(quota: QuotaData): string {
   if (pct <= 30) return "quota-low";
   return "quota-ok";
 }
-
-const AVAILABLE_MODELS = [
-  "MiniMax-M2.7",
-  "MiniMax-M2.7-highspeed",
-  "MiniMax-M2.5",
-  "MiniMax-M2.5-highspeed",
-  "MiniMax-M2.1",
-  "MiniMax-M2.1-highspeed",
-];
 
 interface StatusBarProps {
   model: string;
@@ -62,7 +54,7 @@ export function StatusBar({ model, mode, totalTokens, quota, onModeChange, onMod
         </span>
         {showModelPicker && (
           <div className="model-picker">
-            {AVAILABLE_MODELS.map((m) => (
+            {MODEL_IDS.map((m) => (
               <div
                 key={m}
                 className={`model-picker-item${m === model ? " model-picker-item-active" : ""}`}

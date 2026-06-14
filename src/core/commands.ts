@@ -1,7 +1,7 @@
 import { existsSync, writeFileSync } from "fs";
 import { join } from "path";
 import { themes } from "../config/themes";
-import { MODEL_IDS } from "./api";
+import { MODEL_IDS } from "../shared/models";
 
 export type CommandResult =
   | { type: "message"; text: string }

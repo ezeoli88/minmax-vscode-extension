@@ -11,16 +11,16 @@ export function WhatsNewModal({ version, onDismiss }: WhatsNewModalProps) {
           <span className="whats-new-title">What's New in v{version}</span>
         </div>
         <div className="whats-new-body">
-          <p className="whats-new-highlight">🎉 MiniMax M2.7 is here!</p>
+          <p className="whats-new-highlight">🎉 MiniMax M3 is here!</p>
           <ul className="whats-new-list">
             <li>
-              <strong>MiniMax-M2.7</strong> — The latest and most capable MiniMax model, now available as the default.
+              <strong>MiniMax-M3</strong> — The latest M-series model for coding and agent workflows, now available as the default.
             </li>
             <li>
-              <strong>MiniMax-M2.7-highspeed</strong> — High-speed variant for faster responses with great quality.
+              1M-token context window for larger codebases and longer sessions.
             </li>
             <li>
-              All previous models (M2.5, M2.1) remain available in the model picker.
+              Previous models (M2.7, M2.5, M2.1) remain available in the model picker.
             </li>
           </ul>
           <p className="whats-new-note">

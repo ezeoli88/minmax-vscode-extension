@@ -1,8 +1,8 @@
 {
   "name": "minmax-vscode",
   "displayName": "MiniMax AI Assistant",
-  "description": "AI coding assistant powered by MiniMax M2.7",
-  "version": "0.2.7",
+  "description": "AI coding assistant powered by MiniMax M3",
+  "version": "0.2.8",
   "publisher": "ezeoli88",
   "license": "MIT",
   "icon": "resources/minimax-code-icon.png",
@@ -81,8 +81,9 @@
       "properties": {
         "minimax.model": {
           "type": "string",
-          "default": "MiniMax-M2.7",
+          "default": "MiniMax-M3",
           "enum": [
+            "MiniMax-M3",
             "MiniMax-M2.7",
             "MiniMax-M2.7-highspeed",
             "MiniMax-M2.5",

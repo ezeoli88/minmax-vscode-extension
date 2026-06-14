@@ -1,16 +1,8 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { AVAILABLE_MODELS, MODEL_IDS } from "../shared/models";
 
-export const AVAILABLE_MODELS = [
-  { id: "MiniMax-M2.7", label: "MiniMax-M2.7", description: "Latest, ~60 tps" },
-  { id: "MiniMax-M2.7-highspeed", label: "MiniMax-M2.7-highspeed", description: "Latest fast, ~100 tps" },
-  { id: "MiniMax-M2.5", label: "MiniMax-M2.5", description: "Latest, ~60 tps" },
-  { id: "MiniMax-M2.5-highspeed", label: "MiniMax-M2.5-highspeed", description: "Latest fast, ~100 tps" },
-  { id: "MiniMax-M2.1", label: "MiniMax-M2.1", description: "Previous gen, ~60 tps" },
-  { id: "MiniMax-M2.1-highspeed", label: "MiniMax-M2.1-highspeed", description: "Previous gen fast, ~100 tps" },
-] as const;
-
-export const MODEL_IDS = AVAILABLE_MODELS.map((m) => m.id);
+export { AVAILABLE_MODELS, MODEL_IDS };
 
 export function createClient(apiKey: string): OpenAI {
   return new OpenAI({
@@ -26,13 +18,21 @@ export interface QuotaInfo {
   resetMinutes: number;
 }
 
+interface CodingPlanRemainsResponse {
+  model_remains?: Array<{
+    current_interval_total_count?: number;
+    current_interval_usage_count?: number;
+    remains_time?: number;
+  }>;
+}
+
 export async function fetchCodingPlanRemains(apiKey: string): Promise<QuotaInfo | null> {
   try {
     const res = await fetch("https://api.minimax.io/v1/coding_plan/remains", {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
     if (!res.ok) return null;
-    const data = await res.json();
+    const data = (await res.json()) as CodingPlanRemainsResponse;
 
     const entry = data.model_remains?.[0];
     if (!entry) return null;
